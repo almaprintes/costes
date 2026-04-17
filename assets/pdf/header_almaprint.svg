@@ -1,0 +1,16 @@
+<svg width="1200" height="180" viewBox="0 0 1200 180" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="apgrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8A5CFF"/>
+      <stop offset="100%" stop-color="#FF8C42"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="180" fill="#151329"/>
+  <rect x="0" y="0" width="1200" height="8" fill="url(#apgrad)"/>
+  <circle cx="90" cy="90" r="42" fill="url(#apgrad)"/>
+  <text x="155" y="84" font-size="42" fill="#FFFFFF" font-family="Arial" font-weight="bold">AlmaPrint</text>
+  <text x="156" y="115" font-size="18" fill="#B7BCE0" font-family="Arial">Hecho con alma</text>
+  <text x="1120" y="66" font-size="16" fill="#B7BCE0" font-family="Arial" text-anchor="end">Presupuesto</text>
+  <text x="1120" y="94" font-size="16" fill="#B7BCE0" font-family="Arial" text-anchor="end">Fecha: {{fecha}}</text>
+  <text x="1120" y="122" font-size="16" fill="#B7BCE0" font-family="Arial" text-anchor="end">Nº: {{numero}}</text>
+</svg>
