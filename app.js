@@ -1,409 +1,57 @@
-(() => {
-  'use strict';
 
-  const STORAGE_KEY = 'almaprint:costes:products:v3';
-  const $ = (id) => document.getElementById(id);
-  const form = $('productForm');
-  const listEl = $('productList');
-  const tpl = $('productItemTemplate');
-  const searchInput = $('searchInput');
-  const supplierFilter = $('supplierFilter');
-  const categoryFilter = $('categoryFilter');
-  const supplierSuggestions = $('supplierSuggestions');
-  const categorySuggestions = $('categorySuggestions');
+let data = JSON.parse(localStorage.getItem('productos')||'[]');
 
-  const installBtn = $('installBtn');
-  let deferredPrompt = null;
+function calcularBeneficio(p){
+  const bruto = p.venta - p.coste;
+  const neto = bruto - (bruto * (p.gastos||0)/100);
+  return {bruto, neto};
+}
 
-  const fields = {
-    productId: $('productId'),
-    name: $('name'),
-    category: $('category'),
-    supplierName: $('supplierName'),
-    supplierPrice: $('supplierPrice'),
-    supplierDiscount: $('supplierDiscount'),
-    unitsPerPack: $('unitsPerPack'),
-    inkCostPerMl: $('inkCostPerMl'),
-    inkMlUsed: $('inkMlUsed'),
-    paperCostPerSheet: $('paperCostPerSheet'),
-    paperSheetsUsed: $('paperSheetsUsed'),
-    electricityCost: $('electricityCost'),
-    laborMinutes: $('laborMinutes'),
-    laborRateHour: $('laborRateHour'),
-    extraCost: $('extraCost'),
-    marginPercent: $('marginPercent'),
-    notes: $('notes')
-  };
+function guardar(){
+  const nombre = document.getElementById('nombre').value;
+  const proveedor = document.getElementById('proveedor').value;
+  const categoria = document.getElementById('categoria').value;
+  const coste = parseFloat(document.getElementById('coste').value)||0;
+  const venta = parseFloat(document.getElementById('venta').value)||0;
+  const gastos = parseFloat(document.getElementById('gastos').value)||0;
 
-  const previews = {
-    base: $('baseCostPreview'),
-    ink: $('inkCostPreview'),
-    paper: $('paperCostPreview'),
-    labor: $('laborCostPreview'),
-    total: $('totalCostPreview'),
-    sale: $('salePricePreview'),
-    profit: $('profitPreview'),
-    profitMargin: $('profitMarginPreview')
-  };
+  const {bruto, neto} = calcularBeneficio({coste, venta, gastos});
 
-  const stats = {
-    count: $('statsCount'),
-    avg: $('statsAvg'),
-    saleAvg: $('statsSaleAvg'),
-    profitAvg: $('statsProfitAvg')
-  };
-
-  const state = {
-    products: loadProducts(),
-    filter: '',
-    supplierFilter: ''
-  };
-
-  function n(value) {
-    const num = Number(value);
-    return Number.isFinite(num) ? num : 0;
-  }
-
-  function money(value) {
-    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n(value));
-  }
-
-  function uid() {
-    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-  }
-
-  function normalize(text) {
-    return String(text || '').trim().toLowerCase();
-  }
-
-  function loadProducts() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('almaprint:costes:products:v1');
-      const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function saveProducts() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.products));
-  }
-
-  function calculateFromForm() {
-    const supplierPrice = n(fields.supplierPrice.value);
-    const supplierDiscount = n(fields.supplierDiscount.value);
-    const unitsPerPack = Math.max(1, n(fields.unitsPerPack.value));
-    const inkCostPerMl = n(fields.inkCostPerMl.value);
-    const inkMlUsed = n(fields.inkMlUsed.value);
-    const paperCostPerSheet = n(fields.paperCostPerSheet.value);
-    const paperSheetsUsed = n(fields.paperSheetsUsed.value);
-    const electricityCost = n(fields.electricityCost.value);
-    const laborMinutes = n(fields.laborMinutes.value);
-    const laborRateHour = n(fields.laborRateHour.value);
-    const extraCost = n(fields.extraCost.value);
-    const marginPercent = n(fields.marginPercent.value);
-
-    const discountedPackPrice = supplierPrice * (1 - supplierDiscount / 100);
-    const baseCostUnit = discountedPackPrice / unitsPerPack;
-    const inkCost = inkCostPerMl * inkMlUsed;
-    const paperCost = paperCostPerSheet * paperSheetsUsed;
-    const laborCost = (laborMinutes / 60) * laborRateHour;
-    const totalCost = baseCostUnit + inkCost + paperCost + electricityCost + laborCost + extraCost;
-    const suggestedSalePrice = totalCost * (1 + marginPercent / 100);
-    const estimatedProfit = suggestedSalePrice - totalCost;
-    const realMarginPercent = suggestedSalePrice > 0 ? (estimatedProfit / suggestedSalePrice) * 100 : 0;
-
-    return {
-      discountedPackPrice,
-      baseCostUnit,
-      inkCost,
-      paperCost,
-      laborCost,
-      electricityCost,
-      extraCost,
-      totalCost,
-      suggestedSalePrice,
-      estimatedProfit,
-      realMarginPercent
-    };
-  }
-
-  function updatePreview() {
-    const calc = calculateFromForm();
-    previews.base.textContent = money(calc.baseCostUnit);
-    previews.ink.textContent = money(calc.inkCost);
-    previews.paper.textContent = money(calc.paperCost);
-    previews.labor.textContent = money(calc.laborCost);
-    previews.total.textContent = money(calc.totalCost);
-    previews.sale.textContent = money(calc.suggestedSalePrice);
-    previews.profit.textContent = money(calc.estimatedProfit);
-    previews.profitMargin.textContent = pct(calc.realMarginPercent);
-  }
-
-  function resetForm() {
-    form.reset();
-    fields.productId.value = '';
-    fields.supplierPrice.value = '0';
-    fields.supplierDiscount.value = '5';
-    fields.unitsPerPack.value = '1';
-    fields.inkCostPerMl.value = '0.1406';
-    fields.inkMlUsed.value = '3';
-    fields.paperCostPerSheet.value = '0.1865';
-    fields.paperSheetsUsed.value = '1';
-    fields.electricityCost.value = '0.02';
-    fields.laborMinutes.value = '10';
-    fields.laborRateHour.value = '10';
-    fields.extraCost.value = '0';
-    fields.marginPercent.value = '60';
-    updatePreview();
-    fields.name.focus();
-  }
-
-  function buildProductFromForm() {
-    const calc = calculateFromForm();
-    return {
-      id: fields.productId.value || uid(),
-      name: fields.name.value.trim(),
-      category: fields.category.value.trim(),
-      supplierName: fields.supplierName.value.trim(),
-      supplierPrice: n(fields.supplierPrice.value),
-      supplierDiscount: n(fields.supplierDiscount.value),
-      unitsPerPack: Math.max(1, n(fields.unitsPerPack.value)),
-      inkCostPerMl: n(fields.inkCostPerMl.value),
-      inkMlUsed: n(fields.inkMlUsed.value),
-      paperCostPerSheet: n(fields.paperCostPerSheet.value),
-      paperSheetsUsed: n(fields.paperSheetsUsed.value),
-      electricityCost: n(fields.electricityCost.value),
-      laborMinutes: n(fields.laborMinutes.value),
-      laborRateHour: n(fields.laborRateHour.value),
-      extraCost: n(fields.extraCost.value),
-      marginPercent: n(fields.marginPercent.value),
-      notes: fields.notes.value.trim(),
-      createdAt: new Date().toISOString(),
-      calc
-    };
-  }
-
-  function upsertProduct(product) {
-    const idx = state.products.findIndex((p) => p.id === product.id);
-    if (idx >= 0) state.products[idx] = product;
-    else state.products.unshift(product);
-    saveProducts();
-    render();
-  }
-
-  function fillForm(product) {
-    fields.productId.value = product.id;
-    fields.name.value = product.name || '';
-    fields.category.value = product.category || '';
-    fields.supplierName.value = product.supplierName || '';
-    fields.supplierPrice.value = product.supplierPrice ?? 0;
-    fields.supplierDiscount.value = product.supplierDiscount ?? 5;
-    fields.unitsPerPack.value = product.unitsPerPack ?? 1;
-    fields.inkCostPerMl.value = product.inkCostPerMl ?? 0.1406;
-    fields.inkMlUsed.value = product.inkMlUsed ?? 3;
-    fields.paperCostPerSheet.value = product.paperCostPerSheet ?? 0.1865;
-    fields.paperSheetsUsed.value = product.paperSheetsUsed ?? 1;
-    fields.electricityCost.value = product.electricityCost ?? 0.02;
-    fields.laborMinutes.value = product.laborMinutes ?? 10;
-    fields.laborRateHour.value = product.laborRateHour ?? 10;
-    fields.extraCost.value = product.extraCost ?? 0;
-    fields.marginPercent.value = product.marginPercent ?? 60;
-    fields.notes.value = product.notes || '';
-    updatePreview();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  function removeProduct(id) {
-    state.products = state.products.filter((p) => p.id !== id);
-    saveProducts();
-    render();
-  }
-
-  function getSuppliers(products = state.products) {
-    return [...new Set(products
-      .map((p) => String(p.supplierName || '').trim())
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b, 'es'))
-    )];
-  }
-
-
-  function getCategories(products = state.products) {
-    return [...new Set(products
-      .map((p) => String(p.category || '').trim())
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b, 'es'))
-    )];
-  }
-
-  function refreshSupplierOptions() {
-    const suppliers = getSuppliers();
-    supplierSuggestions.innerHTML = suppliers.map((name) => `<option value="${escapeHtml(name)}"></option>`).join('');
-    const current = state.supplierFilter;
-    supplierFilter.innerHTML = `<option value="">Todos los proveedores</option>` +
-      suppliers.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
-    supplierFilter.value = suppliers.includes(current) ? current : '';
-    if (!suppliers.includes(current)) state.supplierFilter = '';
-  }
-
-  function refreshCategoryOptions() {
-    const categories = getCategories();
-    categorySuggestions.innerHTML = categories.map((name) => `<option value="${escapeHtml(name)}"></option>`).join('');
-    const current = state.categoryFilter;
-    categoryFilter.innerHTML = `<option value="">Todas las categorías</option>` +
-      categories.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
-    categoryFilter.value = categories.includes(current) ? current : '';
-    if (!categories.includes(current)) state.categoryFilter = '';
-  }
-
-  function filteredProducts() {
-    const q = normalize(state.filter);
-    const supplier = normalize(state.supplierFilter);
-    const category = normalize(state.categoryFilter);
-    return state.products.filter((p) => {
-      const matchesSearch = !q || [p.name, p.category, p.notes, p.supplierName].join(' ').toLowerCase().includes(q);
-      const matchesSupplier = !supplier || normalize(p.supplierName) === supplier;
-      const matchesCategory = !category || normalize(p.category) === category;
-      return matchesSearch && matchesSupplier && matchesCategory;
-    });
-  }
-
-  function updateStats(products) {
-    stats.count.textContent = String(products.length);
-    const avg = products.length ? products.reduce((a, p) => a + n(p.calc?.totalCost), 0) / products.length : 0;
-    const saleAvg = products.length ? products.reduce((a, p) => a + n(p.calc?.suggestedSalePrice), 0) / products.length : 0;
-    const profitAvg = products.length ? products.reduce((a, p) => a + n(p.calc?.estimatedProfit), 0) / products.length : 0;
-    stats.avg.textContent = money(avg);
-    stats.saleAvg.textContent = money(saleAvg);
-    stats.profitAvg.textContent = money(profitAvg);
-  }
-
-  function escapeHtml(text) {
-    return String(text)
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
-  }
-
-  function render() {
-    refreshSupplierOptions();
-    refreshCategoryOptions();
-    const products = filteredProducts();
-    listEl.innerHTML = '';
-    updateStats(products);
-
-    if (!products.length) {
-      listEl.innerHTML = `<div class="empty">No hay productos para ese filtro. El proveedor se ha escondido detrás del mostrador.</div>`;
-      return;
-    }
-
-    for (const product of products) {
-      const node = tpl.content.firstElementChild.cloneNode(true);
-      const meta = [product.category || 'Sin categoría', product.supplierName || 'Proveedor sin indicar'].join(' · ');
-      node.querySelector('.item-name').textContent = product.name || 'Sin nombre';
-      node.querySelector('.item-meta').textContent = meta;
-      node.querySelector('.item-total').textContent = money(product.calc?.totalCost);
-      node.querySelector('.item-base').textContent = money(product.calc?.baseCostUnit);
-      node.querySelector('.item-consumables').textContent = money((product.calc?.inkCost || 0) + (product.calc?.paperCost || 0));
-      node.querySelector('.item-labor').textContent = money(product.calc?.laborCost);
-      node.querySelector('.item-sale').textContent = money(product.calc?.suggestedSalePrice);
-      node.querySelector('.item-profit').textContent = money(product.calc?.estimatedProfit);
-      node.querySelector('.item-margin').textContent = pct(product.calc?.realMarginPercent);
-      node.querySelector('.item-notes').textContent = product.notes || 'Sin notas.';
-      node.querySelector('.edit-btn').addEventListener('click', () => fillForm(product));
-      node.querySelector('.delete-btn').addEventListener('click', () => {
-        if (confirm(`¿Borrar "${product.name}"?`)) removeProduct(product.id);
-      });
-      listEl.appendChild(node);
-    }
-  }
-
-  function exportData() {
-    const payload = {
-      app: 'AlmaPrint Costes',
-      exportedAt: new Date().toISOString(),
-      products: state.products
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `almaprint-costes-${new Date().toISOString().slice(0,10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function importData(file) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const parsed = JSON.parse(String(reader.result || '{}'));
-        const products = Array.isArray(parsed) ? parsed : parsed.products;
-        if (!Array.isArray(products)) throw new Error('Formato no válido');
-        state.products = products;
-        saveProducts();
-        render();
-        alert('Importación completada. Tus productos han vuelto a casa.');
-      } catch {
-        alert('No pude importar ese archivo. Revisa que sea un JSON exportado por la app.');
-      }
-    };
-    reader.readAsText(file);
-  }
-
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    if (!fields.name.value.trim()) {
-      fields.name.focus();
-      return;
-    }
-    upsertProduct(buildProductFromForm());
-    resetForm();
-  });
-
-  form.addEventListener('input', updatePreview);
-  $('resetBtn').addEventListener('click', resetForm);
-  $('exportBtn').addEventListener('click', exportData);
-  $('importInput').addEventListener('change', (e) => {
-    const file = e.target.files?.[0];
-    if (file) importData(file);
-    e.target.value = '';
-  });
-  searchInput.addEventListener('input', (e) => {
-    state.filter = e.target.value || '';
-    render();
-  });
-  supplierFilter.addEventListener('change', (e) => {
-    state.supplierFilter = e.target.value || '';
-    render();
-  });
-  categoryFilter.addEventListener('change', (e) => {
-    state.categoryFilter = e.target.value || '';
-    render();
-  });
-
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    installBtn.classList.remove('hidden');
-  });
-
-  installBtn.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    installBtn.classList.add('hidden');
-  });
-
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
-  }
-
-  updatePreview();
+  data.push({nombre, proveedor, categoria, coste, venta, gastos, bruto, neto});
+  localStorage.setItem('productos', JSON.stringify(data));
   render();
-})();
+}
+
+function duplicar(i){
+  const nuevo = {...data[i]};
+  nuevo.nombre = nuevo.nombre + " (copia)";
+  data.push(nuevo);
+  localStorage.setItem('productos', JSON.stringify(data));
+  render();
+}
+
+function eliminar(i){
+  data.splice(i,1);
+  localStorage.setItem('productos', JSON.stringify(data));
+  render();
+}
+
+function render(){
+  const ul = document.getElementById('lista');
+  if(!ul) return;
+  ul.innerHTML = '';
+  data.forEach((p,i)=>{
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <b>${p.nombre}</b><br>
+      ${p.proveedor} - ${p.categoria}<br>
+      Coste: ${p.coste}€ | Venta: ${p.venta}€<br>
+      Beneficio: ${p.bruto.toFixed(2)}€ | Neto: ${p.neto.toFixed(2)}€<br>
+      <button onclick="duplicar(${i})">Duplicar</button>
+      <button onclick="eliminar(${i})">Eliminar</button>
+    `;
+    ul.appendChild(li);
+  });
+}
+
+render();
