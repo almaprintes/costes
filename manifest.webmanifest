@@ -1,7 +1,7 @@
 {
-  "name": "AlmaPrint Costes v5 Pro",
-  "short_name": "AP Costes",
-  "description": "Calculadora offline de costes para productos personalizados de AlmaPrint.",
+  "name": "AlmaPrint Costes v6.2 PDF Pro",
+  "short_name": "AP PDF Pro",
+  "description": "Costes y presupuestos PDF offline para AlmaPrint.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f1020",

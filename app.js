@@ -1,16 +1,17 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'almaprint:costes:products:v5';
-  const LEGACY_KEYS = [
-    'almaprint:costes:products:v4',
-    'almaprint:costes:products:v3',
-    'almaprint:costes:products:v2',
-    'almaprint:costes:products:v1',
-    'productos'
-  ];
+  const PRODUCTS_KEY = 'almaprint:costes:products:v62';
+  const QUOTES_KEY = 'almaprint:quotes:v62';
+  const QUOTE_SEQ_KEY = 'almaprint:quotes:seq';
 
   const $ = (id) => document.getElementById(id);
+
+  const tabProducts = $('tabProducts');
+  const tabQuotes = $('tabQuotes');
+  const viewProducts = $('viewProducts');
+  const viewQuotes = $('viewQuotes');
+
   const form = $('productForm');
   const listEl = $('productList');
   const tpl = $('productItemTemplate');
@@ -21,9 +22,6 @@
   const categorySuggestions = $('categorySuggestions');
   const importInput = $('importInput');
   const saveBtn = $('saveBtn');
-
-  const installBtn = $('installBtn');
-  let deferredPrompt = null;
 
   const fields = {
     productId: $('productId'),
@@ -65,112 +63,111 @@
     profitAvg: $('statsProfitAvg')
   };
 
+  const qf = {
+    number: $('quoteNumber'),
+    date: $('quoteDate'),
+    clientName: $('quoteClientName'),
+    clientPhone: $('quoteClientPhone'),
+    notes: $('quoteNotes'),
+    itemName: $('quoteItemName'),
+    itemQty: $('quoteItemQty'),
+    itemPrice: $('quoteItemPrice')
+  };
+
+  const quoteItemsEl = $('quoteItems');
+  const quoteBase = $('quoteBase');
+  const quoteIgic = $('quoteIgic');
+  const quoteTotal = $('quoteTotal');
+  const quoteHistory = $('quoteHistory');
+  const quoteTpl = $('quoteHistoryTemplate');
+
   const state = {
-    products: loadProducts(),
+    products: load(PRODUCTS_KEY),
+    quotes: load(QUOTES_KEY),
     filter: '',
     supplierFilter: '',
-    categoryFilter: ''
+    categoryFilter: '',
+    currentQuote: null
   };
 
   function n(value) {
-    const num = Number(String(value).replace(',', '.'));
+    const num = Number(String(value ?? '').replace(',', '.'));
     return Number.isFinite(num) ? num : 0;
   }
-
   function money(value) {
     return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n(value));
   }
-
+  function moneyPlain(value) {
+    return new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n(value)) + ' €';
+  }
   function percent(value) {
     return `${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 }).format(n(value))}%`;
   }
-
   function uid() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   }
-
   function normalize(text) {
     return String(text || '').trim().toLowerCase();
   }
-
-  function loadProducts() {
+  function load(key) {
     try {
-      const current = localStorage.getItem(STORAGE_KEY);
-      if (current) {
-        const parsed = JSON.parse(current);
-        return Array.isArray(parsed) ? parsed.map(migrateProduct) : [];
-      }
-      for (const key of LEGACY_KEYS) {
-        const raw = localStorage.getItem(key);
-        if (!raw) continue;
-        const parsed = JSON.parse(raw);
-        const products = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.products) ? parsed.products : []);
-        if (products.length) return products.map(migrateProduct);
-      }
-    } catch {}
-    return [];
-  }
-
-  function saveProducts() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.products));
-  }
-
-  function migrateProduct(product) {
-    if (!product || typeof product !== 'object') return defaultProduct();
-    const p = { ...defaultProduct(), ...product };
-    if (product.calc && typeof product.calc === 'object') {
-      // legacy shape
-      p.baseCostWithIgic = n(product.calc.baseCostUnit || product.baseCostWithIgic);
-      p.inkCost = n(product.calc.inkCost || product.inkCost);
-      p.paperCost = n(product.calc.paperCost || product.paperCost);
-      p.laborCost = n(product.calc.laborCost || product.laborCost);
-      p.totalCost = n(product.calc.totalCost || product.totalCost);
-      p.salePrice = n(product.calc.suggestedSalePrice || product.salePrice);
-      p.profit = n(product.profit || (p.salePrice - p.totalCost));
-      p.profitMargin = p.salePrice > 0 ? (p.profit / p.salePrice) * 100 : 0;
-    } else {
-      const recalc = recalculate(p);
-      Object.assign(p, recalc);
+      const raw = localStorage.getItem(key);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
     }
-    p.id = p.id || uid();
-    return p;
+  }
+  function saveProducts() {
+    localStorage.setItem(PRODUCTS_KEY, JSON.stringify(state.products));
+  }
+  function saveQuotes() {
+    localStorage.setItem(QUOTES_KEY, JSON.stringify(state.quotes));
+  }
+  function nextQuoteNumber() {
+    const current = Number(localStorage.getItem(QUOTE_SEQ_KEY) || 0) + 1;
+    localStorage.setItem(QUOTE_SEQ_KEY, String(current));
+    return `AP-${new Date().getFullYear()}-${String(current).padStart(3, '0')}`;
   }
 
   function defaultProduct() {
     return {
-      id: '',
-      name: '',
-      category: '',
-      supplierName: '',
-      supplierPrice: 0,
-      supplierDiscount: 5,
-      igicPercent: 3,
-      unitsPerPack: 1,
-      inkCostPerMl: 0.1406,
-      inkMlUsed: 3,
-      paperCostPerSheet: 0.1865,
-      paperSheetsUsed: 1,
-      electricityCost: 0.02,
-      laborMinutes: 10,
-      laborRateHour: 10,
-      extraCost: 0,
-      marginPercent: 60,
-      manualSalePrice: '',
-      notes: '',
-      createdAt: '',
-      baseCostWithIgic: 0,
-      inkCost: 0,
-      paperCost: 0,
-      laborCost: 0,
-      totalCost: 0,
-      salePrice: 0,
-      profit: 0,
-      profitMargin: 0
+      id: '', name: '', category: '', supplierName: '', supplierPrice: 0, supplierDiscount: 5,
+      igicPercent: 3, unitsPerPack: 1, inkCostPerMl: 0.1406, inkMlUsed: 3,
+      paperCostPerSheet: 0.1865, paperSheetsUsed: 1, electricityCost: 0.02,
+      laborMinutes: 10, laborRateHour: 10, extraCost: 0, marginPercent: 60,
+      manualSalePrice: '', notes: '', createdAt: ''
     };
   }
 
-  function calculateFromForm() {
-    return recalculate(readFormValues());
+  function defaultQuote() {
+    const today = new Date().toISOString().slice(0, 10);
+    return {
+      id: uid(),
+      number: nextQuoteNumber(),
+      date: today,
+      clientName: '',
+      clientPhone: '',
+      notes: '',
+      items: []
+    };
+  }
+
+  function recalculate(raw) {
+    const p = { ...defaultProduct(), ...raw };
+    const discountedPackPrice = p.supplierPrice * (1 - p.supplierDiscount / 100);
+    const baseCostUnit = discountedPackPrice / Math.max(1, p.unitsPerPack);
+    const igicAmount = baseCostUnit * (p.igicPercent / 100);
+    const baseCostWithIgic = baseCostUnit + igicAmount;
+    const inkCost = p.inkCostPerMl * p.inkMlUsed;
+    const paperCost = p.paperCostPerSheet * p.paperSheetsUsed;
+    const laborCost = (p.laborMinutes / 60) * p.laborRateHour;
+    const totalCost = baseCostWithIgic + inkCost + paperCost + p.electricityCost + p.extraCost + laborCost;
+    const suggestedSalePrice = totalCost * (1 + p.marginPercent / 100);
+    const salePrice = p.manualSalePrice !== '' && n(p.manualSalePrice) > 0 ? n(p.manualSalePrice) : suggestedSalePrice;
+    const profit = salePrice - totalCost;
+    const profitMargin = salePrice > 0 ? (profit / salePrice) * 100 : 0;
+    return { ...p, baseCostWithIgic, inkCost, paperCost, laborCost, totalCost, salePrice, profit, profitMargin };
   }
 
   function readFormValues() {
@@ -198,38 +195,8 @@
     };
   }
 
-  function recalculate(raw) {
-    const product = { ...defaultProduct(), ...raw };
-    const discountedPackPrice = product.supplierPrice * (1 - product.supplierDiscount / 100);
-    const baseCostUnit = discountedPackPrice / Math.max(1, product.unitsPerPack);
-    const igicAmount = baseCostUnit * (product.igicPercent / 100);
-    const baseCostWithIgic = baseCostUnit + igicAmount;
-    const inkCost = product.inkCostPerMl * product.inkMlUsed;
-    const paperCost = product.paperCostPerSheet * product.paperSheetsUsed;
-    const laborCost = (product.laborMinutes / 60) * product.laborRateHour;
-    const totalCost = baseCostWithIgic + inkCost + paperCost + product.electricityCost + laborCost + product.extraCost;
-    const suggestedSalePrice = totalCost * (1 + product.marginPercent / 100);
-    const salePrice = product.manualSalePrice !== '' && n(product.manualSalePrice) > 0
-      ? n(product.manualSalePrice)
-      : suggestedSalePrice;
-    const profit = salePrice - totalCost;
-    const profitMargin = salePrice > 0 ? (profit / salePrice) * 100 : 0;
-
-    return {
-      ...product,
-      baseCostWithIgic,
-      inkCost,
-      paperCost,
-      laborCost,
-      totalCost,
-      salePrice,
-      profit,
-      profitMargin
-    };
-  }
-
   function updatePreview() {
-    const calc = calculateFromForm();
+    const calc = recalculate(readFormValues());
     previews.base.textContent = money(calc.baseCostWithIgic);
     previews.ink.textContent = money(calc.inkCost);
     previews.paper.textContent = money(calc.paperCost);
@@ -238,7 +205,6 @@
     previews.sale.textContent = money(calc.salePrice);
     previews.profit.textContent = money(calc.profit);
     previews.margin.textContent = percent(calc.profitMargin);
-
     setValueTone(previews.profit, calc.profit);
     setMarginTone(previews.margin, calc.profitMargin);
   }
@@ -276,7 +242,6 @@
     fields.manualSalePrice.value = '';
     saveBtn.textContent = 'Guardar producto';
     updatePreview();
-    fields.name.focus();
   }
 
   function upsertProduct(product) {
@@ -284,7 +249,7 @@
     if (idx >= 0) state.products[idx] = product;
     else state.products.unshift(product);
     saveProducts();
-    render();
+    renderProducts();
   }
 
   function fillForm(product) {
@@ -309,68 +274,47 @@
     fields.notes.value = product.notes || '';
     saveBtn.textContent = 'Actualizar producto';
     updatePreview();
+    switchView('products');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function duplicateProduct(product) {
-    const copy = {
-      ...product,
-      id: uid(),
-      name: `${product.name || 'Producto'} (copia)`,
-      createdAt: new Date().toISOString()
-    };
+    const copy = { ...product, id: uid(), name: `${product.name} (copia)`, createdAt: new Date().toISOString() };
     state.products.unshift(copy);
     saveProducts();
-    render();
+    renderProducts();
   }
 
   function removeProduct(id) {
     state.products = state.products.filter((p) => p.id !== id);
     saveProducts();
-    render();
+    renderProducts();
   }
 
-  function getUniqueValues(field, products = state.products) {
-    return [...new Set(products
-      .map((p) => String(p[field] || '').trim())
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b, 'es'))
-    )];
+  function getUniqueValues(field) {
+    return [...new Set(state.products.map((p) => String(p[field] || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
   }
 
   function refreshOptions() {
     const suppliers = getUniqueValues('supplierName');
     const categories = getUniqueValues('category');
-
-    supplierSuggestions.innerHTML = suppliers.map((name) => `<option value="${escapeHtml(name)}"></option>`).join('');
-    categorySuggestions.innerHTML = categories.map((name) => `<option value="${escapeHtml(name)}"></option>`).join('');
-
-    refreshSelect(supplierFilter, suppliers, 'Todos los proveedores', state.supplierFilter, (v) => { state.supplierFilter = v; });
-    refreshSelect(categoryFilter, categories, 'Todas las categorías', state.categoryFilter, (v) => { state.categoryFilter = v; });
-  }
-
-  function refreshSelect(selectEl, values, defaultLabel, currentValue, onReset) {
-    selectEl.innerHTML = `<option value="">${defaultLabel}</option>` +
-      values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
-    if (values.includes(currentValue)) {
-      selectEl.value = currentValue;
-    } else {
-      selectEl.value = '';
-      onReset('');
-    }
+    supplierSuggestions.innerHTML = suppliers.map((v) => `<option value="${escapeHtml(v)}"></option>`).join('');
+    categorySuggestions.innerHTML = categories.map((v) => `<option value="${escapeHtml(v)}"></option>`).join('');
+    supplierFilter.innerHTML = `<option value="">Todos los proveedores</option>` + suppliers.map((v) => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+    categoryFilter.innerHTML = `<option value="">Todas las categorías</option>` + categories.map((v) => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+    supplierFilter.value = state.supplierFilter;
+    categoryFilter.value = state.categoryFilter;
   }
 
   function filteredProducts() {
     const q = normalize(state.filter);
     const supplier = normalize(state.supplierFilter);
     const category = normalize(state.categoryFilter);
-
     return state.products.filter((p) => {
-      const haystack = [p.name, p.category, p.notes, p.supplierName].join(' ').toLowerCase();
-      const matchesSearch = !q || haystack.includes(q);
-      const matchesSupplier = !supplier || normalize(p.supplierName) === supplier;
-      const matchesCategory = !category || normalize(p.category) === category;
-      return matchesSearch && matchesSupplier && matchesCategory;
+      const haystack = [p.name, p.category, p.supplierName, p.notes].join(' ').toLowerCase();
+      return (!q || haystack.includes(q)) &&
+             (!supplier || normalize(p.supplierName) === supplier) &&
+             (!category || normalize(p.category) === category);
     });
   }
 
@@ -384,16 +328,7 @@
     stats.profitAvg.textContent = money(profitAvg);
   }
 
-  function escapeHtml(text) {
-    return String(text)
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
-  }
-
-  function profitClass(value) {
+  function valueClass(value) {
     if (value > 0) return 'value-ok';
     if (value === 0) return 'value-warn';
     return 'value-bad';
@@ -405,35 +340,31 @@
     return 'value-bad';
   }
 
-  function render() {
+  function renderProducts() {
     refreshOptions();
     const products = filteredProducts();
-    listEl.innerHTML = '';
     updateStats(products);
-
+    listEl.innerHTML = '';
     if (!products.length) {
-      listEl.innerHTML = `<div class="empty">No hay productos con ese filtro. Se escondieron detrás de la taza de muestra.</div>`;
+      listEl.innerHTML = `<div class="empty">No hay productos con ese filtro. Se escondieron detrás del vinilo premium.</div>`;
       return;
     }
-
     for (const product of products) {
       const node = tpl.content.firstElementChild.cloneNode(true);
-      const meta = [product.category || 'Sin categoría', product.supplierName || 'Proveedor sin indicar'].join(' · ');
       node.querySelector('.item-name').textContent = product.name || 'Sin nombre';
-      node.querySelector('.item-meta').textContent = meta;
-
+      node.querySelector('.item-meta').textContent = [product.category || 'Sin categoría', product.supplierName || 'Proveedor sin indicar'].join(' · ');
       const pill = node.querySelector('.item-total');
       pill.textContent = money(product.totalCost);
       if (product.profit <= 0) pill.classList.add('bad');
 
       node.querySelector('.item-base').textContent = money(product.baseCostWithIgic);
-      node.querySelector('.item-consumables').textContent = money(product.inkCost + product.paperCost);
+      node.querySelector('.item-consumables').textContent = money(n(product.inkCost) + n(product.paperCost));
       node.querySelector('.item-labor').textContent = money(product.laborCost);
       node.querySelector('.item-sale').textContent = money(product.salePrice);
 
       const profitEl = node.querySelector('.item-profit');
       profitEl.textContent = money(product.profit);
-      profitEl.classList.add(profitClass(product.profit));
+      profitEl.classList.add(valueClass(product.profit));
 
       const marginEl = node.querySelector('.item-margin');
       marginEl.textContent = percent(product.profitMargin);
@@ -445,53 +376,36 @@
       node.querySelector('.delete-btn').addEventListener('click', () => {
         if (confirm(`¿Borrar "${product.name}"?`)) removeProduct(product.id);
       });
-
+      node.querySelector('.add-quote-btn').addEventListener('click', () => {
+        addQuoteItem(product.name, 1, round2(product.salePrice));
+        switchView('quotes');
+      });
       listEl.appendChild(node);
     }
   }
 
   function exportJson() {
-    const payload = {
-      app: 'AlmaPrint Costes v5 Pro',
-      exportedAt: new Date().toISOString(),
-      products: state.products
-    };
+    const payload = { app: 'AlmaPrint Costes v6.2 PDF Pro', exportedAt: new Date().toISOString(), products: state.products, quotes: state.quotes };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    downloadBlob(blob, `almaprint-costes-${new Date().toISOString().slice(0,10)}.json`);
+    downloadBlob(blob, `almaprint-v62-${new Date().toISOString().slice(0,10)}.json`);
   }
 
   function exportCsv() {
-    const headers = [
-      'nombre','categoria','proveedor','precio_original','descuento_pct','igic_pct','unidades_pack',
-      'base_con_igic','tinta','papel','electricidad','mano_obra','otros_costes',
-      'coste_total','margen_deseado_pct','precio_venta','beneficio','margen_real_pct','notas'
-    ];
-    const rows = state.products.map((p) => [
-      p.name, p.category, p.supplierName, p.supplierPrice, p.supplierDiscount, p.igicPercent, p.unitsPerPack,
-      round2(p.baseCostWithIgic), round2(p.inkCost), round2(p.paperCost), round2(p.electricityCost),
-      round2(p.laborCost), round2(p.extraCost), round2(p.totalCost), p.marginPercent,
-      round2(p.salePrice), round2(p.profit), round2(p.profitMargin), p.notes
-    ]);
+    const headers = ['nombre','categoria','proveedor','coste_total','precio_venta','beneficio','margen_real_pct','notas'];
+    const rows = state.products.map((p) => [p.name, p.category, p.supplierName, round2(p.totalCost), round2(p.salePrice), round2(p.profit), round2(p.profitMargin), p.notes]);
     const csv = [headers, ...rows].map((row) => row.map(csvCell).join(';')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-    downloadBlob(blob, `almaprint-costes-${new Date().toISOString().slice(0,10)}.csv`);
+    downloadBlob(blob, `productos-almaprint-${new Date().toISOString().slice(0,10)}.csv`);
   }
 
   function csvCell(value) {
-    const text = String(value ?? '');
-    return `"${text.replaceAll('"', '""')}"`;
-  }
-
-  function round2(value) {
-    return Math.round(n(value) * 100) / 100;
+    return `"${String(value ?? '').replaceAll('"', '""')}"`;
   }
 
   function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
+    a.href = url; a.download = filename; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1200);
   }
 
@@ -500,39 +414,320 @@
     reader.onload = () => {
       try {
         const parsed = JSON.parse(String(reader.result || '{}'));
-        const products = Array.isArray(parsed) ? parsed : parsed.products;
-        if (!Array.isArray(products)) throw new Error('Formato no válido');
-        state.products = products.map(migrateProduct);
-        saveProducts();
-        render();
-        alert('Importación completada. Tus productos han vuelto a casa.');
+        if (Array.isArray(parsed.products)) state.products = parsed.products.map(recalculate);
+        if (Array.isArray(parsed.quotes)) state.quotes = parsed.quotes;
+        saveProducts(); saveQuotes();
+        renderProducts(); renderQuotes();
+        alert('Importación completada.');
       } catch {
-        alert('No pude importar ese archivo. Revisa que sea un JSON exportado por la app.');
+        alert('No pude importar ese archivo.');
       }
     };
     reader.readAsText(file);
   }
 
-  function registerServiceWorker() {
-    if (!('serviceWorker' in navigator)) return;
-    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+  function switchView(which) {
+    const productsActive = which === 'products';
+    tabProducts.classList.toggle('active', productsActive);
+    tabQuotes.classList.toggle('active', !productsActive);
+    viewProducts.classList.toggle('active', productsActive);
+    viewQuotes.classList.toggle('active', !productsActive);
   }
 
-  function setupInstallPrompt() {
-    window.addEventListener('beforeinstallprompt', (event) => {
-      event.preventDefault();
-      deferredPrompt = event;
-      installBtn.classList.remove('hidden');
-    });
+  // QUOTES
+  function addQuoteItem(name, qty, price) {
+    state.currentQuote.items.push({ id: uid(), name: name || '', qty: Math.max(1, n(qty) || 1), price: round2(price) });
+    renderQuoteItems();
+  }
 
-    installBtn.addEventListener('click', async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      await deferredPrompt.userChoice;
-      deferredPrompt = null;
-      installBtn.classList.add('hidden');
+  function removeQuoteItem(id) {
+    state.currentQuote.items = state.currentQuote.items.filter((item) => item.id !== id);
+    renderQuoteItems();
+  }
+
+  function renderQuoteItems() {
+    quoteItemsEl.innerHTML = '';
+    if (!state.currentQuote.items.length) {
+      quoteItemsEl.innerHTML = `<div class="empty">Todavía no hay líneas en este presupuesto.</div>`;
+    } else {
+      state.currentQuote.items.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'quote-row';
+        const subtotal = round2(item.qty * item.price);
+        row.innerHTML = `
+          <div><strong>${escapeHtml(item.name)}</strong></div>
+          <div><strong>${item.qty}</strong></div>
+          <div><strong>${money(item.price)}</strong></div>
+          <div><strong>${money(subtotal)}</strong></div>
+          <div><button type="button" class="danger">Quitar</button></div>
+        `;
+        row.querySelector('button').addEventListener('click', () => removeQuoteItem(item.id));
+        quoteItemsEl.appendChild(row);
+      });
+    }
+    const totals = quoteTotals(state.currentQuote);
+    quoteBase.textContent = money(totals.base);
+    quoteIgic.textContent = money(totals.igic);
+    quoteTotal.textContent = money(totals.total);
+  }
+
+  function quoteTotals(quote) {
+    const base = round2((quote.items || []).reduce((sum, item) => sum + item.qty * item.price, 0));
+    const igic = round2(base * 0.03);
+    const total = round2(base + igic);
+    return { base, igic, total };
+  }
+
+  function syncQuoteFieldsToState() {
+    state.currentQuote.number = qf.number.value.trim();
+    state.currentQuote.date = qf.date.value;
+    state.currentQuote.clientName = qf.clientName.value.trim();
+    state.currentQuote.clientPhone = qf.clientPhone.value.trim();
+    state.currentQuote.notes = qf.notes.value.trim();
+  }
+
+  function loadQuoteIntoForm(quote) {
+    state.currentQuote = JSON.parse(JSON.stringify(quote));
+    qf.number.value = quote.number || '';
+    qf.date.value = quote.date || new Date().toISOString().slice(0,10);
+    qf.clientName.value = quote.clientName || '';
+    qf.clientPhone.value = quote.clientPhone || '';
+    qf.notes.value = quote.notes || '';
+    qf.itemName.value = '';
+    qf.itemQty.value = '1';
+    qf.itemPrice.value = '';
+    renderQuoteItems();
+    switchView('quotes');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function resetQuoteForm() {
+    state.currentQuote = defaultQuote();
+    qf.number.value = state.currentQuote.number;
+    qf.date.value = state.currentQuote.date;
+    qf.clientName.value = '';
+    qf.clientPhone.value = '';
+    qf.notes.value = '';
+    qf.itemName.value = '';
+    qf.itemQty.value = '1';
+    qf.itemPrice.value = '';
+    renderQuoteItems();
+  }
+
+  function saveCurrentQuote() {
+    syncQuoteFieldsToState();
+    if (!state.currentQuote.items.length) {
+      alert('Añade al menos una línea antes de guardar.');
+      return;
+    }
+    const idx = state.quotes.findIndex((q) => q.id === state.currentQuote.id);
+    const copy = JSON.parse(JSON.stringify(state.currentQuote));
+    if (idx >= 0) state.quotes[idx] = copy;
+    else state.quotes.unshift(copy);
+    saveQuotes();
+    renderQuotes();
+    alert('Presupuesto guardado.');
+  }
+
+  function duplicateQuote(quote) {
+    const copy = JSON.parse(JSON.stringify(quote));
+    copy.id = uid();
+    copy.number = nextQuoteNumber();
+    state.quotes.unshift(copy);
+    saveQuotes();
+    renderQuotes();
+  }
+
+  function deleteQuote(id) {
+    state.quotes = state.quotes.filter((q) => q.id !== id);
+    saveQuotes();
+    renderQuotes();
+  }
+
+  function renderQuotes() {
+    quoteHistory.innerHTML = '';
+    if (!state.quotes.length) {
+      quoteHistory.innerHTML = `<div class="empty">Aún no hay presupuestos guardados.</div>`;
+      return;
+    }
+    state.quotes.forEach((quote) => {
+      const node = quoteTpl.content.firstElementChild.cloneNode(true);
+      const totals = quoteTotals(quote);
+      node.querySelector('.quote-name').textContent = quote.number || 'Sin número';
+      node.querySelector('.quote-meta').textContent = [quote.clientName || 'Cliente sin nombre', formatDate(quote.date) || 'Sin fecha'].join(' · ');
+      node.querySelector('.quote-total-pill').textContent = money(totals.total);
+      node.querySelector('.quote-lines').textContent = quote.items.map((item) => `${item.qty} x ${item.name}`).join(' · ') || 'Sin líneas.';
+      node.querySelector('.quote-open-btn').addEventListener('click', () => loadQuoteIntoForm(quote));
+      node.querySelector('.quote-duplicate-btn').addEventListener('click', () => duplicateQuote(quote));
+      node.querySelector('.quote-delete-btn').addEventListener('click', () => {
+        if (confirm(`¿Borrar presupuesto ${quote.number}?`)) deleteQuote(quote.id);
+      });
+      node.querySelector('.quote-pdf-btn').addEventListener('click', () => generatePdf(quote));
+      quoteHistory.appendChild(node);
     });
   }
+
+  function formatDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return new Intl.DateTimeFormat('es-ES').format(d);
+  }
+
+  // PRETTY PDF BUILDER
+  function escPdf(text) {
+    return String(text || '')
+      .replaceAll('\\', '\\\\')
+      .replaceAll('(', '\\(')
+      .replaceAll(')', '\\)')
+      .replaceAll('\n', ' ');
+  }
+
+  function buildPdfOps(quote) {
+    const totals = quoteTotals(quote);
+    const ops = [];
+    const pageH = 842;
+    let y = pageH - 55;
+
+    const text = (x, y, size, str, color='1 1 1', font='F1') => {
+      ops.push(`BT /${font} ${size} Tf ${color} rg 1 0 0 1 ${x} ${y} Tm (${escPdf(str)}) Tj ET`);
+    };
+    const line = (x1,y1,x2,y2,width=1,color='1 1 1') => {
+      ops.push(`${width} w ${color} RG ${x1} ${y1} m ${x2} ${y2} l S`);
+    };
+    const rectFill = (x,y,w,h,color='0 0 0') => {
+      ops.push(`${color} rg ${x} ${y} ${w} ${h} re f`);
+    };
+    const rectStroke = (x,y,w,h,width=1,color='1 1 1') => {
+      ops.push(`${width} w ${color} RG ${x} ${y} ${w} ${h} re S`);
+    };
+
+    // Background header blocks
+    rectFill(0, pageH-130, 595, 130, '0.08 0.07 0.16');
+    rectFill(0, pageH-8, 595, 8, '0.54 0.36 1.00');
+    rectFill(330, pageH-8, 265, 8, '1.00 0.55 0.26');
+    rectFill(45, pageH-94, 44, 44, '0.54 0.36 1.00');
+    rectFill(89, pageH-94, 16, 44, '1.00 0.55 0.26');
+
+    text(120, pageH-62, 28, 'AlmaPrint', '1 1 1', 'F2');
+    text(121, pageH-86, 11, 'Hecho con alma', '0.84 0.85 0.94');
+    text(435, pageH-58, 13, 'PRESUPUESTO', '0.84 0.85 0.94', 'F2');
+    text(435, pageH-78, 11, `Fecha: ${formatDate(quote.date)}`, '0.84 0.85 0.94');
+    text(435, pageH-96, 11, `Nº: ${quote.number}`, '0.84 0.85 0.94');
+
+    // Client card
+    rectFill(40, pageH-195, 515, 50, '0.13 0.14 0.27');
+    rectStroke(40, pageH-195, 515, 50, 0.6, '0.23 0.24 0.40');
+    text(54, pageH-168, 10, `Cliente: ${quote.clientName || 'Sin indicar'}`, '1 1 1', 'F2');
+    text(54, pageH-184, 10, `Teléfono: ${quote.clientPhone || 'Sin indicar'}`, '0.84 0.85 0.94');
+    y = pageH - 235;
+
+    // Table header
+    rectFill(40, y, 515, 24, '0.54 0.36 1.00');
+    text(52, y+8, 10, 'Producto', '1 1 1', 'F2');
+    text(352, y+8, 10, 'Cant.', '1 1 1', 'F2');
+    text(415, y+8, 10, 'Precio', '1 1 1', 'F2');
+    text(485, y+8, 10, 'Subtotal', '1 1 1', 'F2');
+    y -= 26;
+
+    quote.items.forEach((item, idx) => {
+      const bg = idx % 2 === 0 ? '0.96 0.96 0.99' : '0.92 0.93 0.98';
+      rectFill(40, y, 515, 26, bg);
+      text(52, y+8, 9, truncate(item.name, 38), '0.10 0.11 0.18');
+      text(360, y+8, 9, String(item.qty), '0.10 0.11 0.18');
+      text(410, y+8, 9, moneyPlain(item.price), '0.10 0.11 0.18');
+      text(478, y+8, 9, moneyPlain(item.qty * item.price), '0.10 0.11 0.18', 'F2');
+      y -= 26;
+    });
+
+    // totals box
+    const boxY = Math.max(110, y - 20);
+    rectFill(320, boxY, 235, 86, '0.13 0.14 0.27');
+    rectStroke(320, boxY, 235, 86, 0.8, '0.23 0.24 0.40');
+    text(336, boxY+58, 10, 'Base', '0.84 0.85 0.94');
+    text(490, boxY+58, 10, moneyPlain(totals.base), '1 1 1', 'F2');
+    text(336, boxY+38, 10, 'IGIC 3%', '0.84 0.85 0.94');
+    text(490, boxY+38, 10, moneyPlain(totals.igic), '1 1 1', 'F2');
+    line(336, boxY+30, 539, boxY+30, 0.6, '0.30 0.31 0.45');
+    text(336, boxY+12, 14, 'TOTAL', '1.00 0.55 0.26', 'F2');
+    text(471, boxY+10, 16, moneyPlain(totals.total), '1 1 1', 'F2');
+
+    // observations
+    const obsY = boxY - 76;
+    rectFill(40, obsY, 515, 56, '0.97 0.97 1.0');
+    rectStroke(40, obsY, 515, 56, 0.6, '0.80 0.81 0.88');
+    text(52, obsY+36, 10, 'Observaciones', '0.10 0.11 0.18', 'F2');
+    text(52, obsY+18, 9, truncate(quote.notes || 'Sin observaciones.', 88), '0.25 0.27 0.39');
+
+    // footer
+    rectFill(0, 0, 595, 64, '0.08 0.07 0.16');
+    line(0, 64, 595, 64, 1, '0.17 0.16 0.31');
+    text(40, 40, 10, 'Entrega orientativa: 3-5 días laborables', '0.84 0.85 0.94');
+    text(40, 22, 10, 'Pago: Bizum / Transferencia', '0.84 0.85 0.94');
+    text(365, 31, 10, 'Gracias por confiar en AlmaPrint', '0.55 0.57 0.72', 'F2');
+
+    return ops.join('\n');
+  }
+
+  function truncate(str, max) {
+    str = String(str || '');
+    return str.length > max ? str.slice(0, max - 1) + '…' : str;
+  }
+
+  function buildSimpleStyledPdf(quote) {
+    const stream = buildPdfOps(quote);
+    const objects = [];
+    const offsets = [];
+    let pdf = '%PDF-1.4\n';
+
+    objects.push('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
+    objects.push('2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n');
+    objects.push('3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>\nendobj\n');
+    objects.push('4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n');
+    objects.push('5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>\nendobj\n');
+    objects.push(`6 0 obj\n<< /Length ${stream.length} >>\nstream\n${stream}\nendstream\nendobj\n`);
+
+    objects.forEach((obj) => {
+      offsets.push(pdf.length);
+      pdf += obj;
+    });
+
+    const xrefStart = pdf.length;
+    pdf += `xref\n0 ${objects.length + 1}\n`;
+    pdf += '0000000000 65535 f \n';
+    offsets.forEach((offset) => {
+      pdf += `${String(offset).padStart(10, '0')} 00000 n \n`;
+    });
+    pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+
+    return new Blob([new TextEncoder().encode(pdf)], { type: 'application/pdf' });
+  }
+
+  function generatePdf(quoteParam = null) {
+    syncQuoteFieldsToState();
+    const quote = quoteParam ? JSON.parse(JSON.stringify(quoteParam)) : JSON.parse(JSON.stringify(state.currentQuote));
+    if (!quote.items.length) {
+      alert('Añade al menos una línea al presupuesto.');
+      return;
+    }
+    const pdfBlob = buildSimpleStyledPdf(quote);
+    downloadBlob(pdfBlob, `${(quote.number || 'presupuesto').replaceAll(' ', '_')}.pdf`);
+  }
+
+  function escapeHtml(text) {
+    return String(text || '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
+  function round2(value) { return Math.round(n(value) * 100) / 100; }
+
+  // Event wiring
+  tabProducts.addEventListener('click', () => switchView('products'));
+  tabQuotes.addEventListener('click', () => switchView('quotes'));
 
   form.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -540,43 +735,44 @@
       fields.name.focus();
       return;
     }
-    const product = recalculate(readFormValues());
-    upsertProduct(product);
+    upsertProduct(recalculate(readFormValues()));
     resetForm();
   });
 
-  Object.values(fields).forEach((field) => {
-    if (!field) return;
-    field.addEventListener('input', updatePreview);
-  });
-
+  Object.values(fields).forEach((field) => field && field.addEventListener('input', updatePreview));
   $('resetBtn').addEventListener('click', resetForm);
   $('exportJsonBtn').addEventListener('click', exportJson);
   $('exportCsvBtn').addEventListener('click', exportCsv);
-
-  searchInput.addEventListener('input', () => {
-    state.filter = searchInput.value;
-    render();
-  });
-
-  supplierFilter.addEventListener('change', () => {
-    state.supplierFilter = supplierFilter.value;
-    render();
-  });
-
-  categoryFilter.addEventListener('change', () => {
-    state.categoryFilter = categoryFilter.value;
-    render();
-  });
-
+  searchInput.addEventListener('input', () => { state.filter = searchInput.value; renderProducts(); });
+  supplierFilter.addEventListener('change', () => { state.supplierFilter = supplierFilter.value; renderProducts(); });
+  categoryFilter.addEventListener('change', () => { state.categoryFilter = categoryFilter.value; renderProducts(); });
   importInput.addEventListener('change', () => {
     const file = importInput.files?.[0];
     if (file) importData(file);
     importInput.value = '';
   });
 
-  updatePreview();
-  render();
-  registerServiceWorker();
-  setupInstallPrompt();
+  $('addCustomItemBtn').addEventListener('click', () => {
+    const name = qf.itemName.value.trim();
+    const qty = Math.max(1, n(qf.itemQty.value) || 1);
+    const price = n(qf.itemPrice.value);
+    if (!name || !price) {
+      alert('Pon nombre y precio unitario.');
+      return;
+    }
+    addQuoteItem(name, qty, price);
+    qf.itemName.value = '';
+    qf.itemQty.value = '1';
+    qf.itemPrice.value = '';
+  });
+
+  $('saveQuoteBtn').addEventListener('click', saveCurrentQuote);
+  $('resetQuoteBtn').addEventListener('click', resetQuoteForm);
+  $('generatePdfBtn').addEventListener('click', () => generatePdf());
+
+  state.currentQuote = defaultQuote();
+  resetForm();
+  resetQuoteForm();
+  renderProducts();
+  renderQuotes();
 })();
