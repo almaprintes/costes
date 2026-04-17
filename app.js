@@ -776,3 +776,25 @@
   renderProducts();
   renderQuotes();
 })();
+
+// compact navigation for collapsible sections
+function setupCompactNav(navId){
+  const nav = document.getElementById(navId);
+  if(!nav) return;
+  nav.querySelectorAll('.mini-tab').forEach((btn)=>{
+    btn.addEventListener('click', ()=>{
+      const targetId = btn.dataset.target;
+      const target = document.getElementById(targetId);
+      if(!target) return;
+      nav.querySelectorAll('.mini-tab').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.form-section').forEach(sec=>{
+        if(sec.id === targetId) sec.open = true;
+      });
+      target.scrollIntoView({behavior:'smooth', block:'start'});
+    });
+  });
+}
+
+setupCompactNav('productQuickNav');
+setupCompactNav('quoteQuickNav');

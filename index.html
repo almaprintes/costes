@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#151329" />
-  <title>AlmaPrint Costes v5 Pro</title>
+  <title>AlmaPrint Costes v6.2 PDF Pro</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icons/icon-192.png" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
@@ -15,200 +15,264 @@
     <header class="hero">
       <div>
         <p class="eyebrow">ALMAPRINT</p>
-        <h1>Control de costes v5 Pro</h1>
-        <p class="subtitle">Offline, con alma y con números de verdad. Proveedor, IGIC, mano de obra, filtros, duplicado y exportación.</p>
+        <h1>Costes + presupuestos PDF Pro v6.3</h1>
+        <p class="subtitle">Offline, elegante y más navegable. Menos scroll eterno, más control a golpe de bloque.</p>
       </div>
-      <button id="installBtn" class="ghost hidden" type="button">Instalar app</button>
+      <nav class="tabs">
+        <button id="tabProducts" class="tab active" type="button">Productos</button>
+        <button id="tabQuotes" class="tab" type="button">Presupuestos</button>
+      </nav>
     </header>
 
-    <main class="grid">
-      <section class="card form-card">
-        <div class="card-head">
-          <h2>Producto</h2>
-          <p>Rellena el formulario y la app calcula el coste real y la rentabilidad al vuelo.</p>
-        </div>
-
-        <form id="productForm" novalidate>
-          <input type="hidden" id="productId" />
-
-          <div class="field-grid two">
-            <label>
-              <span>Nombre del producto</span>
-              <input id="name" required placeholder="Ej. Taza blanca 11 oz" />
-            </label>
-            <label>
-              <span>Categoría</span>
-              <input id="category" list="categorySuggestions" placeholder="Ej. Tazas, Bolsas, Puzzle" />
-              <datalist id="categorySuggestions"></datalist>
-            </label>
+    <main id="viewProducts" class="view active">
+      <div class="grid">
+        <section class="card form-card">
+          <div class="card-head">
+            <h2>Producto</h2>
+            <p>Calcula coste real con proveedor, descuento, IGIC, consumibles y mano de obra.</p>
           </div>
 
-          <div class="field-grid two">
-            <label>
-              <span>Proveedor</span>
-              <input id="supplierName" list="supplierSuggestions" placeholder="Ej. Garrampa, Brildor..." />
-              <datalist id="supplierSuggestions"></datalist>
-            </label>
-            <label>
-              <span>Precio original proveedor (€)</span>
-              <input id="supplierPrice" type="number" min="0" step="0.01" inputmode="decimal" value="0" />
-            </label>
+          
+<form id="productForm" novalidate>
+  <input type="hidden" id="productId" />
+
+  <div class="compact-nav" id="productQuickNav">
+    <button type="button" class="mini-tab active" data-target="sec-basic">Básico</button>
+    <button type="button" class="mini-tab" data-target="sec-supplier">Proveedor</button>
+    <button type="button" class="mini-tab" data-target="sec-production">Producción</button>
+    <button type="button" class="mini-tab" data-target="sec-pricing">Precio</button>
+  </div>
+
+  <details class="form-section" id="sec-basic" open>
+    <summary>Datos básicos</summary>
+    <div class="section-body">
+      <div class="field-grid two">
+        <label><span>Nombre del producto</span><input id="name" required placeholder="Ej. Taza blanca 11 oz" /></label>
+        <label><span>Categoría</span><input id="category" list="categorySuggestions" placeholder="Ej. Tazas, Bolsas, Puzzle" /><datalist id="categorySuggestions"></datalist></label>
+      </div>
+      <label><span>Notas</span><textarea id="notes" rows="3" placeholder="Observaciones, medidas, acabado, etc."></textarea></label>
+    </div>
+  </details>
+
+  <details class="form-section" id="sec-supplier">
+    <summary>Proveedor y compra</summary>
+    <div class="section-body">
+      <div class="field-grid two">
+        <label><span>Proveedor</span><input id="supplierName" list="supplierSuggestions" placeholder="Ej. Garrampa, Brildor..." /><datalist id="supplierSuggestions"></datalist></label>
+        <label><span>Precio original proveedor (€)</span><input id="supplierPrice" type="number" min="0" step="0.01" inputmode="decimal" value="0" /></label>
+      </div>
+      <div class="field-grid three">
+        <label><span>Descuento proveedor (%)</span><input id="supplierDiscount" type="number" min="0" step="0.01" inputmode="decimal" value="5" /></label>
+        <label><span>IGIC (%)</span><input id="igicPercent" type="number" min="0" step="0.01" inputmode="decimal" value="3" /></label>
+        <label><span>Unidades compradas</span><input id="unitsPerPack" type="number" min="1" step="1" inputmode="numeric" value="1" /></label>
+      </div>
+    </div>
+  </details>
+
+  <details class="form-section" id="sec-production">
+    <summary>Producción y consumibles</summary>
+    <div class="section-body">
+      <div class="field-grid two">
+        <label><span>Coste tinta por ml (€)</span><input id="inkCostPerMl" type="number" min="0" step="0.001" inputmode="decimal" value="0.1406" /></label>
+        <label><span>Consumo tinta (ml)</span><input id="inkMlUsed" type="number" min="0" step="0.1" inputmode="decimal" value="3" /></label>
+      </div>
+
+      <div class="field-grid two">
+        <label><span>Coste hoja sublimación (€)</span><input id="paperCostPerSheet" type="number" min="0" step="0.001" inputmode="decimal" value="0.1865" /></label>
+        <label><span>Hojas usadas</span><input id="paperSheetsUsed" type="number" min="0" step="0.1" inputmode="decimal" value="1" /></label>
+      </div>
+
+      <div class="field-grid three">
+        <label><span>Electricidad (€)</span><input id="electricityCost" type="number" min="0" step="0.01" inputmode="decimal" value="0.02" /></label>
+        <label><span>Tiempo trabajo (min)</span><input id="laborMinutes" type="number" min="0" step="1" inputmode="numeric" value="10" /></label>
+        <label><span>Tarifa mano de obra (€/h)</span><input id="laborRateHour" type="number" min="0" step="0.01" inputmode="decimal" value="10" /></label>
+      </div>
+    </div>
+  </details>
+
+  <details class="form-section" id="sec-pricing">
+    <summary>Precio y margen</summary>
+    <div class="section-body">
+      <div class="field-grid three">
+        <label><span>Otros costes (€)</span><input id="extraCost" type="number" min="0" step="0.01" inputmode="decimal" value="0" /></label>
+        <label><span>Margen deseado (%)</span><input id="marginPercent" type="number" min="0" step="1" inputmode="numeric" value="60" /></label>
+        <label><span>Precio venta manual (€)</span><input id="manualSalePrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Opcional" /></label>
+      </div>
+    </div>
+  </details>
+
+  <section class="summary-box sticky-summary" aria-live="polite">
+    <div><span>Base con dto + IGIC</span><strong id="baseCostPreview">0,00 €</strong></div>
+    <div><span>Tinta</span><strong id="inkCostPreview">0,00 €</strong></div>
+    <div><span>Papel</span><strong id="paperCostPreview">0,00 €</strong></div>
+    <div><span>Mano de obra</span><strong id="laborCostPreview">0,00 €</strong></div>
+    <div><span>Coste total</span><strong id="totalCostPreview">0,00 €</strong></div>
+    <div><span>Precio sugerido</span><strong id="salePricePreview">0,00 €</strong></div>
+    <div><span>Beneficio estimado</span><strong id="profitPreview">0,00 €</strong></div>
+    <div><span>Margen real</span><strong id="profitMarginPreview">0%</strong></div>
+  </section>
+
+  <div class="actions sticky-actions">
+    <button class="primary" type="submit" id="saveBtn">Guardar producto</button>
+    <button class="ghost" type="button" id="resetBtn">Limpiar</button>
+  </div>
+</form>
+
+        </section>
+
+        <section class="card list-card">
+          <div class="card-head sticky-head">
+            <div>
+              <h2>Productos guardados</h2>
+              <p>Se quedan en el dispositivo. Como una libreta de márgenes con superpoderes.</p>
+            </div>
+            <div class="toolbar">
+              <button class="ghost" type="button" id="exportJsonBtn">Exportar JSON</button>
+              <button class="ghost" type="button" id="exportCsvBtn">Exportar CSV</button>
+              <label class="ghost import-label">Importar<input id="importInput" type="file" accept="application/json" hidden /></label>
+            </div>
           </div>
 
-          <div class="field-grid three">
-            <label>
-              <span>Descuento proveedor (%)</span>
-              <input id="supplierDiscount" type="number" min="0" step="0.01" inputmode="decimal" value="5" />
-            </label>
-            <label>
-              <span>IGIC (%)</span>
-              <input id="igicPercent" type="number" min="0" step="0.01" inputmode="decimal" value="3" />
-            </label>
-            <label>
-              <span>Unidades compradas</span>
-              <input id="unitsPerPack" type="number" min="1" step="1" inputmode="numeric" value="1" />
-            </label>
+          <div class="overview">
+            <article><span>Total productos</span><strong id="statsCount">0</strong></article>
+            <article><span>Coste medio</span><strong id="statsAvg">0,00 €</strong></article>
+            <article><span>Venta media</span><strong id="statsSaleAvg">0,00 €</strong></article>
+            <article><span>Beneficio medio</span><strong id="statsProfitAvg">0,00 €</strong></article>
           </div>
 
-          <div class="field-grid two">
-            <label>
-              <span>Coste tinta por ml (€)</span>
-              <input id="inkCostPerMl" type="number" min="0" step="0.001" inputmode="decimal" value="0.1406" />
-            </label>
-            <label>
-              <span>Consumo tinta (ml)</span>
-              <input id="inkMlUsed" type="number" min="0" step="0.1" inputmode="decimal" value="3" />
-            </label>
+          <div class="search-row filters-grid">
+            <input id="searchInput" placeholder="Buscar por nombre, categoría, proveedor o nota..." />
+            <select id="supplierFilter"><option value="">Todos los proveedores</option></select>
+            <select id="categoryFilter"><option value="">Todas las categorías</option></select>
           </div>
 
-          <div class="field-grid two">
-            <label>
-              <span>Coste hoja sublimación (€)</span>
-              <input id="paperCostPerSheet" type="number" min="0" step="0.001" inputmode="decimal" value="0.1865" />
-            </label>
-            <label>
-              <span>Hojas usadas</span>
-              <input id="paperSheetsUsed" type="number" min="0" step="0.1" inputmode="decimal" value="1" />
-            </label>
-          </div>
+          <div id="productList" class="product-list"></div>
 
-          <div class="field-grid three">
-            <label>
-              <span>Electricidad (€)</span>
-              <input id="electricityCost" type="number" min="0" step="0.01" inputmode="decimal" value="0.02" />
-            </label>
-            <label>
-              <span>Tiempo trabajo (min)</span>
-              <input id="laborMinutes" type="number" min="0" step="1" inputmode="numeric" value="10" />
-            </label>
-            <label>
-              <span>Tarifa mano de obra (€/h)</span>
-              <input id="laborRateHour" type="number" min="0" step="0.01" inputmode="decimal" value="10" />
-            </label>
-          </div>
-
-          <div class="field-grid three">
-            <label>
-              <span>Otros costes (€)</span>
-              <input id="extraCost" type="number" min="0" step="0.01" inputmode="decimal" value="0" />
-            </label>
-            <label>
-              <span>Margen deseado (%)</span>
-              <input id="marginPercent" type="number" min="0" step="1" inputmode="numeric" value="60" />
-            </label>
-            <label>
-              <span>Precio venta manual (€)</span>
-              <input id="manualSalePrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Opcional" />
-            </label>
-          </div>
-
-          <label>
-            <span>Notas</span>
-            <textarea id="notes" rows="3" placeholder="Proveedor, observaciones, tamaño, acabado..."></textarea>
-          </label>
-
-          <section class="summary-box" aria-live="polite">
-            <div><span>Base con dto + IGIC</span><strong id="baseCostPreview">0,00 €</strong></div>
-            <div><span>Tinta</span><strong id="inkCostPreview">0,00 €</strong></div>
-            <div><span>Papel</span><strong id="paperCostPreview">0,00 €</strong></div>
-            <div><span>Mano de obra</span><strong id="laborCostPreview">0,00 €</strong></div>
-            <div><span>Coste total</span><strong id="totalCostPreview">0,00 €</strong></div>
-            <div><span>Precio sugerido</span><strong id="salePricePreview">0,00 €</strong></div>
-            <div><span>Beneficio estimado</span><strong id="profitPreview">0,00 €</strong></div>
-            <div><span>Margen real</span><strong id="profitMarginPreview">0%</strong></div>
-          </section>
-
-          <div class="actions">
-            <button class="primary" type="submit" id="saveBtn">Guardar producto</button>
-            <button class="ghost" type="button" id="resetBtn">Limpiar</button>
-          </div>
-        </form>
-      </section>
-
-      <section class="card list-card">
-        <div class="card-head sticky-head">
-          <div>
-            <h2>Productos guardados</h2>
-            <p>Se guardan en este dispositivo. Sin nube, sin dependencia.</p>
-          </div>
-          <div class="toolbar">
-            <button class="ghost" type="button" id="exportJsonBtn">Exportar JSON</button>
-            <button class="ghost" type="button" id="exportCsvBtn">Exportar CSV</button>
-            <label class="ghost import-label">
-              Importar
-              <input id="importInput" type="file" accept="application/json" hidden />
-            </label>
-          </div>
-        </div>
-
-        <div class="overview">
-          <article><span>Total productos</span><strong id="statsCount">0</strong></article>
-          <article><span>Coste medio</span><strong id="statsAvg">0,00 €</strong></article>
-          <article><span>Venta media</span><strong id="statsSaleAvg">0,00 €</strong></article>
-          <article><span>Beneficio medio</span><strong id="statsProfitAvg">0,00 €</strong></article>
-        </div>
-
-        <div class="search-row filters-grid three-filters">
-          <input id="searchInput" placeholder="Buscar por nombre, categoría, proveedor o nota..." />
-          <select id="supplierFilter">
-            <option value="">Todos los proveedores</option>
-          </select>
-          <select id="categoryFilter">
-            <option value="">Todas las categorías</option>
-          </select>
-        </div>
-
-        <div id="productList" class="product-list"></div>
-
-        <template id="productItemTemplate">
-          <article class="product-item">
-            <div class="top-row">
-              <div>
-                <h3 class="item-name"></h3>
-                <p class="item-meta"></p>
+          <template id="productItemTemplate">
+            <article class="product-item">
+              <div class="top-row">
+                <div>
+                  <h3 class="item-name"></h3>
+                  <p class="item-meta"></p>
+                </div>
+                <span class="pill item-total"></span>
               </div>
-              <span class="pill item-total"></span>
-            </div>
+              <div class="mini-grid">
+                <div><span>Base + IGIC</span><strong class="item-base"></strong></div>
+                <div><span>Tinta + papel</span><strong class="item-consumables"></strong></div>
+                <div><span>Mano de obra</span><strong class="item-labor"></strong></div>
+                <div><span>Venta</span><strong class="item-sale"></strong></div>
+                <div><span>Beneficio</span><strong class="item-profit"></strong></div>
+                <div><span>Margen real</span><strong class="item-margin"></strong></div>
+              </div>
+              <p class="item-notes"></p>
+              <div class="item-actions">
+                <button type="button" class="ghost add-quote-btn">Añadir al presupuesto</button>
+                <button type="button" class="ghost edit-btn">Editar</button>
+                <button type="button" class="ghost duplicate-btn">Duplicar</button>
+                <button type="button" class="danger delete-btn">Borrar</button>
+              </div>
+            </article>
+          </template>
+        </section>
+      </div>
+    </main>
 
-            <div class="mini-grid">
-              <div><span>Base + IGIC</span><strong class="item-base"></strong></div>
-              <div><span>Tinta + papel</span><strong class="item-consumables"></strong></div>
-              <div><span>Mano de obra</span><strong class="item-labor"></strong></div>
-              <div><span>Venta</span><strong class="item-sale"></strong></div>
-              <div><span>Beneficio</span><strong class="item-profit"></strong></div>
-              <div><span>Margen real</span><strong class="item-margin"></strong></div>
-            </div>
+    <main id="viewQuotes" class="view">
+      <div class="grid quotes-grid">
+        <section class="card form-card">
+          <div class="card-head">
+            <h2>Presupuesto cliente</h2>
+            <p>PDF más bonito, más claro y con más empaque de marca.</p>
+          </div>
+          
+<form id="quoteForm" novalidate>
+  <div class="compact-nav" id="quoteQuickNav">
+    <button type="button" class="mini-tab active" data-target="qsec-client">Cliente</button>
+    <button type="button" class="mini-tab" data-target="qsec-lines">Líneas</button>
+    <button type="button" class="mini-tab" data-target="qsec-summary">Resumen</button>
+  </div>
 
-            <p class="item-notes"></p>
+  <details class="form-section" id="qsec-client" open>
+    <summary>Cliente y cabecera</summary>
+    <div class="section-body">
+      <div class="field-grid two">
+        <label><span>Número presupuesto</span><input id="quoteNumber" placeholder="Ej. AP-2026-001" /></label>
+        <label><span>Fecha</span><input id="quoteDate" type="date" /></label>
+      </div>
+      <div class="field-grid two">
+        <label><span>Cliente</span><input id="quoteClientName" placeholder="Nombre del cliente" /></label>
+        <label><span>Teléfono</span><input id="quoteClientPhone" placeholder="Teléfono o WhatsApp" /></label>
+      </div>
+      <label><span>Observaciones</span><textarea id="quoteNotes" rows="3" placeholder="Plazos, condiciones, detalles del pedido..."></textarea></label>
+    </div>
+  </details>
 
-            <div class="item-actions">
-              <button type="button" class="ghost edit-btn">Editar</button>
-              <button type="button" class="ghost duplicate-btn">Duplicar</button>
-              <button type="button" class="danger delete-btn">Borrar</button>
-            </div>
-          </article>
-        </template>
+  <details class="form-section" id="qsec-lines">
+    <summary>Líneas del presupuesto</summary>
+    <div class="section-body">
+      <div class="quote-builder">
+        <div class="quote-inline">
+          <input id="quoteItemName" placeholder="Producto o concepto" />
+          <input id="quoteItemQty" type="number" min="1" step="1" value="1" />
+          <input id="quoteItemPrice" type="number" min="0" step="0.01" placeholder="Precio unitario" />
+          <button class="ghost" id="addCustomItemBtn" type="button">Añadir línea</button>
+        </div>
+        <p class="help">Puedes añadir líneas manuales o usar el botón “Añadir al presupuesto” desde la lista de productos.</p>
+      </div>
+      <div id="quoteItems" class="quote-items"></div>
+    </div>
+  </details>
+
+  <details class="form-section" id="qsec-summary">
+    <summary>Resumen final</summary>
+    <div class="section-body">
+      <section class="summary-box quote-summary sticky-summary" aria-live="polite">
+        <div><span>Base</span><strong id="quoteBase">0,00 €</strong></div>
+        <div><span>IGIC 3%</span><strong id="quoteIgic">0,00 €</strong></div>
+        <div><span>Total</span><strong id="quoteTotal">0,00 €</strong></div>
       </section>
+    </div>
+  </details>
+
+  <div class="actions sticky-actions">
+    <button class="primary" type="button" id="generatePdfBtn">Generar PDF bonito</button>
+    <button class="ghost" type="button" id="saveQuoteBtn">Guardar presupuesto</button>
+    <button class="ghost" type="button" id="resetQuoteBtn">Limpiar presupuesto</button>
+  </div>
+</form>
+
+        </section>
+
+        <section class="card list-card">
+          <div class="card-head sticky-head">
+            <div>
+              <h2>Presupuestos guardados</h2>
+              <p>Reabrir, duplicar y exportar. El presupuesto deja de ser un déjà vu administrativo.</p>
+            </div>
+          </div>
+          <div id="quoteHistory" class="product-list"></div>
+
+          <template id="quoteHistoryTemplate">
+            <article class="product-item">
+              <div class="top-row">
+                <div>
+                  <h3 class="quote-name"></h3>
+                  <p class="quote-meta"></p>
+                </div>
+                <span class="pill quote-total-pill"></span>
+              </div>
+              <p class="quote-lines"></p>
+              <div class="item-actions">
+                <button type="button" class="ghost quote-open-btn">Abrir</button>
+                <button type="button" class="ghost quote-pdf-btn">PDF</button>
+                <button type="button" class="ghost quote-duplicate-btn">Duplicar</button>
+                <button type="button" class="danger quote-delete-btn">Borrar</button>
+              </div>
+            </article>
+          </template>
+        </section>
+      </div>
     </main>
   </div>
 
