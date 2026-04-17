@@ -9,6 +9,7 @@
   --accent-2: #ff8c42;
   --danger: #ff5e73;
   --ok: #7de3b1;
+  --warn: #ffd166;
   --shadow: 0 20px 45px rgba(0,0,0,.35);
   --radius: 24px;
 }
@@ -74,7 +75,7 @@ h1 { margin: 0; font-size: clamp(1.9rem, 4vw, 3.3rem); }
   margin-bottom: 12px;
 }
 .field-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.field-grid.three { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.field-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 label { display: block; margin-bottom: 12px; }
 label span {
   display: block;
@@ -82,10 +83,8 @@ label span {
   color: var(--muted);
   margin-bottom: 6px;
 }
-input, textarea, button {
-  font: inherit;
-}
-input, textarea {
+input, textarea, button, select { font: inherit; }
+input, textarea, select {
   width: 100%;
   border: 1px solid rgba(255,255,255,.1);
   background: rgba(255,255,255,.05);
@@ -94,7 +93,7 @@ input, textarea {
   padding: 14px 14px;
   outline: none;
 }
-input:focus, textarea:focus {
+input:focus, textarea:focus, select:focus {
   border-color: rgba(138, 92, 255, .9);
   box-shadow: 0 0 0 4px rgba(138,92,255,.15);
 }
@@ -120,6 +119,9 @@ input:focus, textarea:focus {
   margin-bottom: 4px;
 }
 .summary-box strong { font-size: 1rem; }
+.summary-box strong.ok { color: var(--ok); }
+.summary-box strong.warn { color: var(--warn); }
+.summary-box strong.bad { color: #ff8b9a; }
 .actions { display: flex; gap: 10px; }
 button {
   border: 0;
@@ -145,7 +147,7 @@ button {
 .hidden { display: none; }
 .overview {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 12px;
 }
@@ -179,7 +181,7 @@ button {
   align-items: flex-start;
 }
 .item-name { margin: 0 0 4px; }
-.item-category { margin: 0; color: var(--muted); font-size: .9rem; }
+.item-meta, .item-notes { margin: 0; color: var(--muted); font-size: .9rem; }
 .pill {
   background: rgba(125, 227, 177, .12);
   color: var(--ok);
@@ -188,6 +190,11 @@ button {
   padding: 7px 12px;
   font-weight: 700;
   white-space: nowrap;
+}
+.pill.bad {
+  background: rgba(255, 94, 115, .12);
+  color: #ff9aaa;
+  border-color: rgba(255, 94, 115, .2);
 }
 .mini-grid {
   display: grid;
@@ -200,7 +207,7 @@ button {
   border-radius: 14px;
   padding: 10px 12px;
 }
-.mini-grid span, .item-notes {
+.mini-grid span {
   color: var(--muted);
   font-size: .84rem;
 }
@@ -208,11 +215,14 @@ button {
   display: block;
   margin-top: 4px;
 }
+.value-ok { color: var(--ok); }
+.value-warn { color: var(--warn); }
+.value-bad { color: #ff9aaa; }
 .item-notes {
   margin: 0 0 10px;
   line-height: 1.4;
 }
-.item-actions { display: flex; gap: 10px; }
+.item-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .import-label { display: inline-flex; align-items: center; }
 .empty {
   text-align: center;
@@ -221,43 +231,18 @@ button {
   border: 1px dashed rgba(255,255,255,.12);
   border-radius: 18px;
 }
+.filters-grid {
+  display: grid;
+  grid-template-columns: 1.3fr .9fr .9fr;
+  gap: 12px;
+}
 @media (max-width: 980px) {
   .grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {
-  .field-grid.two, .field-grid.three, .summary-box, .overview, .mini-grid {
+  .field-grid.two, .field-grid.three, .summary-box, .overview, .mini-grid, .filters-grid {
     grid-template-columns: 1fr;
   }
   .hero, .sticky-head, .top-row { flex-direction: column; }
   .actions, .item-actions, .toolbar { flex-wrap: wrap; }
 }
-
-.filters-grid {
-  display: grid;
-  grid-template-columns: 1.3fr .9fr;
-  gap: 12px;
-}
-.item-meta {
-  margin: 0;
-  color: var(--muted);
-  font-size: .9rem;
-}
-select {
-  width: 100%;
-  border: 1px solid rgba(255,255,255,.1);
-  background: rgba(255,255,255,.05);
-  color: var(--text);
-  border-radius: 16px;
-  padding: 14px 14px;
-  outline: none;
-}
-select:focus {
-  border-color: rgba(138, 92, 255, .9);
-  box-shadow: 0 0 0 4px rgba(138,92,255,.15);
-}
-@media (max-width: 640px) {
-  .filters-grid { grid-template-columns: 1fr; }
-}
-
-.three-filters { grid-template-columns: 1.2fr .9fr .9fr; }
-@media (max-width: 820px) { .three-filters { grid-template-columns: 1fr; } }

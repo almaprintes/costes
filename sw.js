@@ -1,4 +1,4 @@
-const CACHE = 'almaprint-costes-v2';
+const CACHE = 'almaprint-costes-v5-pro';
 const ASSETS = [
   './',
   './index.html',

@@ -1,18 +1,19 @@
-ALMAPRINT COSTES - APP OFFLINE
+ALMAPRINT COSTES v5 PRO
 
 Qué incluye:
-- App web instalable (PWA)
-- Diseño visual estilo AlmaPrint
-- Funciona offline tras abrirla una vez en navegador o instalarla
-- Guarda los productos en el dispositivo con localStorage
-- Permite exportar e importar copia de seguridad en JSON
+- PWA offline
+- IGIC por defecto al 3%
+- Proveedores reutilizables
+- Categorías reutilizables
+- Filtros por proveedor y categoría
+- Edición de productos
+- Duplicado de productos
+- Exportación JSON y CSV
+- Precio manual opcional
+- Rentabilidad visible con colores
 
-Cómo usarla:
-1. Sube estos archivos a un hosting estático (GitHub Pages sirve perfecto).
-2. Abre la web en el móvil.
-3. Instálala desde "Añadir a pantalla de inicio" si usas iPhone.
-4. Después funcionará offline en el dispositivo.
-
-IMPORTANTE para iPhone:
-- Para modo app real y caché offline fiable, conviene abrirla una vez online y luego añadirla a pantalla de inicio.
-- Un archivo HTML suelto abierto desde Archivos no se comporta igual que una PWA instalada.
+Instalación:
+1. Sube los archivos a GitHub Pages.
+2. Abre la web una vez.
+3. En iPhone: Safari > Compartir > Añadir a pantalla de inicio.
+4. Ya funciona como app instalada y offline.

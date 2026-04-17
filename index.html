@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#151329" />
-  <title>AlmaPrint Costes</title>
+  <title>AlmaPrint Costes v5 Pro</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icons/icon-192.png" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
@@ -15,8 +15,8 @@
     <header class="hero">
       <div>
         <p class="eyebrow">ALMAPRINT</p>
-        <h1>Control de costes</h1>
-        <p class="subtitle">Hecho con alma. Calcula coste real por producto, guarda precios del proveedor y úsala offline.</p>
+        <h1>Control de costes v5 Pro</h1>
+        <p class="subtitle">Offline, con alma y con números de verdad. Proveedor, IGIC, mano de obra, filtros, duplicado y exportación.</p>
       </div>
       <button id="installBtn" class="ghost hidden" type="button">Instalar app</button>
     </header>
@@ -24,8 +24,8 @@
     <main class="grid">
       <section class="card form-card">
         <div class="card-head">
-          <h2>Nuevo producto</h2>
-          <p>Todo lo que influye de verdad: proveedor, tinta, papel, luz y mano de obra.</p>
+          <h2>Producto</h2>
+          <p>Rellena el formulario y la app calcula el coste real y la rentabilidad al vuelo.</p>
         </div>
 
         <form id="productForm" novalidate>
@@ -34,11 +34,11 @@
           <div class="field-grid two">
             <label>
               <span>Nombre del producto</span>
-              <input id="name" name="name" required placeholder="Ej. Taza blanca 11 oz" />
+              <input id="name" required placeholder="Ej. Taza blanca 11 oz" />
             </label>
             <label>
               <span>Categoría</span>
-              <input id="category" name="category" list="categorySuggestions" placeholder="Ej. Tazas, Bolsas, Puzzle" />
+              <input id="category" list="categorySuggestions" placeholder="Ej. Tazas, Bolsas, Puzzle" />
               <datalist id="categorySuggestions"></datalist>
             </label>
           </div>
@@ -46,81 +46,89 @@
           <div class="field-grid two">
             <label>
               <span>Proveedor</span>
-              <input id="supplierName" name="supplierName" list="supplierSuggestions" placeholder="Ej. Garrampa, Brildor, SubliTextil" />
+              <input id="supplierName" list="supplierSuggestions" placeholder="Ej. Garrampa, Brildor..." />
               <datalist id="supplierSuggestions"></datalist>
             </label>
             <label>
               <span>Precio original proveedor (€)</span>
-              <input id="supplierPrice" name="supplierPrice" type="number" min="0" step="0.01" inputmode="decimal" required value="0" />
+              <input id="supplierPrice" type="number" min="0" step="0.01" inputmode="decimal" value="0" />
             </label>
           </div>
 
-          <div class="field-grid two">
+          <div class="field-grid three">
             <label>
               <span>Descuento proveedor (%)</span>
-              <input id="supplierDiscount" name="supplierDiscount" type="number" min="0" step="0.01" inputmode="decimal" value="5" />
+              <input id="supplierDiscount" type="number" min="0" step="0.01" inputmode="decimal" value="5" />
+            </label>
+            <label>
+              <span>IGIC (%)</span>
+              <input id="igicPercent" type="number" min="0" step="0.01" inputmode="decimal" value="3" />
             </label>
             <label>
               <span>Unidades compradas</span>
-              <input id="unitsPerPack" name="unitsPerPack" type="number" min="1" step="1" inputmode="numeric" value="1" />
+              <input id="unitsPerPack" type="number" min="1" step="1" inputmode="numeric" value="1" />
             </label>
           </div>
 
           <div class="field-grid two">
             <label>
               <span>Coste tinta por ml (€)</span>
-              <input id="inkCostPerMl" name="inkCostPerMl" type="number" min="0" step="0.001" inputmode="decimal" value="0.1406" />
+              <input id="inkCostPerMl" type="number" min="0" step="0.001" inputmode="decimal" value="0.1406" />
             </label>
             <label>
               <span>Consumo tinta (ml)</span>
-              <input id="inkMlUsed" name="inkMlUsed" type="number" min="0" step="0.1" inputmode="decimal" value="3" />
+              <input id="inkMlUsed" type="number" min="0" step="0.1" inputmode="decimal" value="3" />
             </label>
           </div>
 
           <div class="field-grid two">
             <label>
               <span>Coste hoja sublimación (€)</span>
-              <input id="paperCostPerSheet" name="paperCostPerSheet" type="number" min="0" step="0.001" inputmode="decimal" value="0.1865" />
+              <input id="paperCostPerSheet" type="number" min="0" step="0.001" inputmode="decimal" value="0.1865" />
             </label>
             <label>
               <span>Hojas usadas</span>
-              <input id="paperSheetsUsed" name="paperSheetsUsed" type="number" min="0" step="0.1" inputmode="decimal" value="1" />
+              <input id="paperSheetsUsed" type="number" min="0" step="0.1" inputmode="decimal" value="1" />
             </label>
           </div>
 
           <div class="field-grid three">
             <label>
               <span>Electricidad (€)</span>
-              <input id="electricityCost" name="electricityCost" type="number" min="0" step="0.01" inputmode="decimal" value="0.02" />
+              <input id="electricityCost" type="number" min="0" step="0.01" inputmode="decimal" value="0.02" />
             </label>
             <label>
               <span>Tiempo trabajo (min)</span>
-              <input id="laborMinutes" name="laborMinutes" type="number" min="0" step="1" inputmode="numeric" value="10" />
+              <input id="laborMinutes" type="number" min="0" step="1" inputmode="numeric" value="10" />
             </label>
             <label>
               <span>Tarifa mano de obra (€/h)</span>
-              <input id="laborRateHour" name="laborRateHour" type="number" min="0" step="0.01" inputmode="decimal" value="10" />
+              <input id="laborRateHour" type="number" min="0" step="0.01" inputmode="decimal" value="10" />
             </label>
           </div>
 
-          <div class="field-grid two">
+          <div class="field-grid three">
             <label>
               <span>Otros costes (€)</span>
-              <input id="extraCost" name="extraCost" type="number" min="0" step="0.01" inputmode="decimal" value="0" />
+              <input id="extraCost" type="number" min="0" step="0.01" inputmode="decimal" value="0" />
             </label>
             <label>
               <span>Margen deseado (%)</span>
-              <input id="marginPercent" name="marginPercent" type="number" min="0" step="1" inputmode="numeric" value="60" />
+              <input id="marginPercent" type="number" min="0" step="1" inputmode="numeric" value="60" />
+            </label>
+            <label>
+              <span>Precio venta manual (€)</span>
+              <input id="manualSalePrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Opcional" />
             </label>
           </div>
 
           <label>
             <span>Notas</span>
-            <textarea id="notes" name="notes" rows="3" placeholder="Proveedor, observaciones, tamaño, acabado..."></textarea>
+            <textarea id="notes" rows="3" placeholder="Proveedor, observaciones, tamaño, acabado..."></textarea>
           </label>
 
           <section class="summary-box" aria-live="polite">
-            <div><span>Coste producto/unidad</span><strong id="baseCostPreview">0,00 €</strong></div>
+            <div><span>Base con dto + IGIC</span><strong id="baseCostPreview">0,00 €</strong></div>
             <div><span>Tinta</span><strong id="inkCostPreview">0,00 €</strong></div>
             <div><span>Papel</span><strong id="paperCostPreview">0,00 €</strong></div>
             <div><span>Mano de obra</span><strong id="laborCostPreview">0,00 €</strong></div>
@@ -131,7 +139,7 @@
           </section>
 
           <div class="actions">
-            <button class="primary" type="submit">Guardar producto</button>
+            <button class="primary" type="submit" id="saveBtn">Guardar producto</button>
             <button class="ghost" type="button" id="resetBtn">Limpiar</button>
           </div>
         </form>
@@ -141,10 +149,11 @@
         <div class="card-head sticky-head">
           <div>
             <h2>Productos guardados</h2>
-            <p>Todo queda en el dispositivo. Sin nube, sin drama.</p>
+            <p>Se guardan en este dispositivo. Sin nube, sin dependencia.</p>
           </div>
           <div class="toolbar">
-            <button class="ghost" type="button" id="exportBtn">Exportar</button>
+            <button class="ghost" type="button" id="exportJsonBtn">Exportar JSON</button>
+            <button class="ghost" type="button" id="exportCsvBtn">Exportar CSV</button>
             <label class="ghost import-label">
               Importar
               <input id="importInput" type="file" accept="application/json" hidden />
@@ -153,26 +162,14 @@
         </div>
 
         <div class="overview">
-          <article>
-            <span>Total productos</span>
-            <strong id="statsCount">0</strong>
-          </article>
-          <article>
-            <span>Coste medio</span>
-            <strong id="statsAvg">0,00 €</strong>
-          </article>
-          <article>
-            <span>Precio medio sugerido</span>
-            <strong id="statsSaleAvg">0,00 €</strong>
-          </article>
-          <article>
-            <span>Beneficio medio</span>
-            <strong id="statsProfitAvg">0,00 €</strong>
-          </article>
+          <article><span>Total productos</span><strong id="statsCount">0</strong></article>
+          <article><span>Coste medio</span><strong id="statsAvg">0,00 €</strong></article>
+          <article><span>Venta media</span><strong id="statsSaleAvg">0,00 €</strong></article>
+          <article><span>Beneficio medio</span><strong id="statsProfitAvg">0,00 €</strong></article>
         </div>
 
         <div class="search-row filters-grid three-filters">
-          <input id="searchInput" placeholder="Buscar por nombre, categoría o proveedor..." />
+          <input id="searchInput" placeholder="Buscar por nombre, categoría, proveedor o nota..." />
           <select id="supplierFilter">
             <option value="">Todos los proveedores</option>
           </select>
@@ -182,6 +179,7 @@
         </div>
 
         <div id="productList" class="product-list"></div>
+
         <template id="productItemTemplate">
           <article class="product-item">
             <div class="top-row">
@@ -191,17 +189,21 @@
               </div>
               <span class="pill item-total"></span>
             </div>
+
             <div class="mini-grid">
-              <div><span>Proveedor/unidad</span><strong class="item-base"></strong></div>
+              <div><span>Base + IGIC</span><strong class="item-base"></strong></div>
               <div><span>Tinta + papel</span><strong class="item-consumables"></strong></div>
               <div><span>Mano de obra</span><strong class="item-labor"></strong></div>
-              <div><span>Precio sugerido</span><strong class="item-sale"></strong></div>
-              <div><span>Beneficio estimado</span><strong class="item-profit"></strong></div>
+              <div><span>Venta</span><strong class="item-sale"></strong></div>
+              <div><span>Beneficio</span><strong class="item-profit"></strong></div>
               <div><span>Margen real</span><strong class="item-margin"></strong></div>
             </div>
+
             <p class="item-notes"></p>
+
             <div class="item-actions">
               <button type="button" class="ghost edit-btn">Editar</button>
+              <button type="button" class="ghost duplicate-btn">Duplicar</button>
               <button type="button" class="danger delete-btn">Borrar</button>
             </div>
           </article>
