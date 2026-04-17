@@ -38,8 +38,7 @@
             </label>
             <label>
               <span>Categoría</span>
-              <input id="category" name="category" list="categorySuggestions" placeholder="Ej. Tazas, Bolsas, Puzzle" />
-              <datalist id="categorySuggestions"></datalist>
+              <input id="category" name="category" placeholder="Ej. Tazas, Bolsas, Puzzle" />
             </label>
           </div>
 
@@ -126,8 +125,6 @@
             <div><span>Mano de obra</span><strong id="laborCostPreview">0,00 €</strong></div>
             <div><span>Coste total</span><strong id="totalCostPreview">0,00 €</strong></div>
             <div><span>Precio sugerido</span><strong id="salePricePreview">0,00 €</strong></div>
-            <div><span>Beneficio estimado</span><strong id="profitPreview">0,00 €</strong></div>
-            <div><span>Margen real</span><strong id="profitMarginPreview">0%</strong></div>
           </section>
 
           <div class="actions">
@@ -165,19 +162,12 @@
             <span>Precio medio sugerido</span>
             <strong id="statsSaleAvg">0,00 €</strong>
           </article>
-          <article>
-            <span>Beneficio medio</span>
-            <strong id="statsProfitAvg">0,00 €</strong>
-          </article>
         </div>
 
-        <div class="search-row filters-grid three-filters">
+        <div class="search-row filters-grid">
           <input id="searchInput" placeholder="Buscar por nombre, categoría o proveedor..." />
           <select id="supplierFilter">
             <option value="">Todos los proveedores</option>
-          </select>
-          <select id="categoryFilter">
-            <option value="">Todas las categorías</option>
           </select>
         </div>
 
@@ -196,8 +186,6 @@
               <div><span>Tinta + papel</span><strong class="item-consumables"></strong></div>
               <div><span>Mano de obra</span><strong class="item-labor"></strong></div>
               <div><span>Precio sugerido</span><strong class="item-sale"></strong></div>
-              <div><span>Beneficio estimado</span><strong class="item-profit"></strong></div>
-              <div><span>Margen real</span><strong class="item-margin"></strong></div>
             </div>
             <p class="item-notes"></p>
             <div class="item-actions">

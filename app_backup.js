@@ -1,16 +1,14 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'almaprint:costes:products:v3';
+  const STORAGE_KEY = 'almaprint:costes:products:v2';
   const $ = (id) => document.getElementById(id);
   const form = $('productForm');
   const listEl = $('productList');
   const tpl = $('productItemTemplate');
   const searchInput = $('searchInput');
   const supplierFilter = $('supplierFilter');
-  const categoryFilter = $('categoryFilter');
   const supplierSuggestions = $('supplierSuggestions');
-  const categorySuggestions = $('categorySuggestions');
 
   const installBtn = $('installBtn');
   let deferredPrompt = null;
@@ -41,16 +39,13 @@
     paper: $('paperCostPreview'),
     labor: $('laborCostPreview'),
     total: $('totalCostPreview'),
-    sale: $('salePricePreview'),
-    profit: $('profitPreview'),
-    profitMargin: $('profitMarginPreview')
+    sale: $('salePricePreview')
   };
 
   const stats = {
     count: $('statsCount'),
     avg: $('statsAvg'),
-    saleAvg: $('statsSaleAvg'),
-    profitAvg: $('statsProfitAvg')
+    saleAvg: $('statsSaleAvg')
   };
 
   const state = {
@@ -111,8 +106,6 @@
     const laborCost = (laborMinutes / 60) * laborRateHour;
     const totalCost = baseCostUnit + inkCost + paperCost + electricityCost + laborCost + extraCost;
     const suggestedSalePrice = totalCost * (1 + marginPercent / 100);
-    const estimatedProfit = suggestedSalePrice - totalCost;
-    const realMarginPercent = suggestedSalePrice > 0 ? (estimatedProfit / suggestedSalePrice) * 100 : 0;
 
     return {
       discountedPackPrice,
@@ -123,9 +116,7 @@
       electricityCost,
       extraCost,
       totalCost,
-      suggestedSalePrice,
-      estimatedProfit,
-      realMarginPercent
+      suggestedSalePrice
     };
   }
 
@@ -137,8 +128,6 @@
     previews.labor.textContent = money(calc.laborCost);
     previews.total.textContent = money(calc.totalCost);
     previews.sale.textContent = money(calc.suggestedSalePrice);
-    previews.profit.textContent = money(calc.estimatedProfit);
-    previews.profitMargin.textContent = pct(calc.realMarginPercent);
   }
 
   function resetForm() {
@@ -229,15 +218,6 @@
     )];
   }
 
-
-  function getCategories(products = state.products) {
-    return [...new Set(products
-      .map((p) => String(p.category || '').trim())
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b, 'es'))
-    )];
-  }
-
   function refreshSupplierOptions() {
     const suppliers = getSuppliers();
     supplierSuggestions.innerHTML = suppliers.map((name) => `<option value="${escapeHtml(name)}"></option>`).join('');
@@ -248,25 +228,13 @@
     if (!suppliers.includes(current)) state.supplierFilter = '';
   }
 
-  function refreshCategoryOptions() {
-    const categories = getCategories();
-    categorySuggestions.innerHTML = categories.map((name) => `<option value="${escapeHtml(name)}"></option>`).join('');
-    const current = state.categoryFilter;
-    categoryFilter.innerHTML = `<option value="">Todas las categorías</option>` +
-      categories.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
-    categoryFilter.value = categories.includes(current) ? current : '';
-    if (!categories.includes(current)) state.categoryFilter = '';
-  }
-
   function filteredProducts() {
     const q = normalize(state.filter);
     const supplier = normalize(state.supplierFilter);
-    const category = normalize(state.categoryFilter);
     return state.products.filter((p) => {
       const matchesSearch = !q || [p.name, p.category, p.notes, p.supplierName].join(' ').toLowerCase().includes(q);
       const matchesSupplier = !supplier || normalize(p.supplierName) === supplier;
-      const matchesCategory = !category || normalize(p.category) === category;
-      return matchesSearch && matchesSupplier && matchesCategory;
+      return matchesSearch && matchesSupplier;
     });
   }
 
@@ -274,10 +242,8 @@
     stats.count.textContent = String(products.length);
     const avg = products.length ? products.reduce((a, p) => a + n(p.calc?.totalCost), 0) / products.length : 0;
     const saleAvg = products.length ? products.reduce((a, p) => a + n(p.calc?.suggestedSalePrice), 0) / products.length : 0;
-    const profitAvg = products.length ? products.reduce((a, p) => a + n(p.calc?.estimatedProfit), 0) / products.length : 0;
     stats.avg.textContent = money(avg);
     stats.saleAvg.textContent = money(saleAvg);
-    stats.profitAvg.textContent = money(profitAvg);
   }
 
   function escapeHtml(text) {
@@ -291,7 +257,6 @@
 
   function render() {
     refreshSupplierOptions();
-    refreshCategoryOptions();
     const products = filteredProducts();
     listEl.innerHTML = '';
     updateStats(products);
@@ -311,8 +276,6 @@
       node.querySelector('.item-consumables').textContent = money((product.calc?.inkCost || 0) + (product.calc?.paperCost || 0));
       node.querySelector('.item-labor').textContent = money(product.calc?.laborCost);
       node.querySelector('.item-sale').textContent = money(product.calc?.suggestedSalePrice);
-      node.querySelector('.item-profit').textContent = money(product.calc?.estimatedProfit);
-      node.querySelector('.item-margin').textContent = pct(product.calc?.realMarginPercent);
       node.querySelector('.item-notes').textContent = product.notes || 'Sin notas.';
       node.querySelector('.edit-btn').addEventListener('click', () => fillForm(product));
       node.querySelector('.delete-btn').addEventListener('click', () => {
@@ -379,10 +342,6 @@
   });
   supplierFilter.addEventListener('change', (e) => {
     state.supplierFilter = e.target.value || '';
-    render();
-  });
-  categoryFilter.addEventListener('change', (e) => {
-    state.categoryFilter = e.target.value || '';
     render();
   });
 
