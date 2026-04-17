@@ -231,3 +231,30 @@ button {
   .hero, .sticky-head, .top-row { flex-direction: column; }
   .actions, .item-actions, .toolbar { flex-wrap: wrap; }
 }
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: 1.3fr .9fr;
+  gap: 12px;
+}
+.item-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: .9rem;
+}
+select {
+  width: 100%;
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.05);
+  color: var(--text);
+  border-radius: 16px;
+  padding: 14px 14px;
+  outline: none;
+}
+select:focus {
+  border-color: rgba(138, 92, 255, .9);
+  box-shadow: 0 0 0 4px rgba(138,92,255,.15);
+}
+@media (max-width: 640px) {
+  .filters-grid { grid-template-columns: 1fr; }
+}

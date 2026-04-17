@@ -1,12 +1,14 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'almaprint:costes:products:v1';
+  const STORAGE_KEY = 'almaprint:costes:products:v2';
   const $ = (id) => document.getElementById(id);
   const form = $('productForm');
   const listEl = $('productList');
   const tpl = $('productItemTemplate');
   const searchInput = $('searchInput');
+  const supplierFilter = $('supplierFilter');
+  const supplierSuggestions = $('supplierSuggestions');
 
   const installBtn = $('installBtn');
   let deferredPrompt = null;
@@ -15,6 +17,7 @@
     productId: $('productId'),
     name: $('name'),
     category: $('category'),
+    supplierName: $('supplierName'),
     supplierPrice: $('supplierPrice'),
     supplierDiscount: $('supplierDiscount'),
     unitsPerPack: $('unitsPerPack'),
@@ -47,7 +50,8 @@
 
   const state = {
     products: loadProducts(),
-    filter: ''
+    filter: '',
+    supplierFilter: ''
   };
 
   function n(value) {
@@ -63,9 +67,13 @@
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   }
 
+  function normalize(text) {
+    return String(text || '').trim().toLowerCase();
+  }
+
   function loadProducts() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('almaprint:costes:products:v1');
       const parsed = raw ? JSON.parse(raw) : [];
       return Array.isArray(parsed) ? parsed : [];
     } catch {
@@ -147,6 +155,7 @@
       id: fields.productId.value || uid(),
       name: fields.name.value.trim(),
       category: fields.category.value.trim(),
+      supplierName: fields.supplierName.value.trim(),
       supplierPrice: n(fields.supplierPrice.value),
       supplierDiscount: n(fields.supplierDiscount.value),
       unitsPerPack: Math.max(1, n(fields.unitsPerPack.value)),
@@ -177,6 +186,7 @@
     fields.productId.value = product.id;
     fields.name.value = product.name || '';
     fields.category.value = product.category || '';
+    fields.supplierName.value = product.supplierName || '';
     fields.supplierPrice.value = product.supplierPrice ?? 0;
     fields.supplierDiscount.value = product.supplierDiscount ?? 5;
     fields.unitsPerPack.value = product.unitsPerPack ?? 1;
@@ -200,12 +210,32 @@
     render();
   }
 
+  function getSuppliers(products = state.products) {
+    return [...new Set(products
+      .map((p) => String(p.supplierName || '').trim())
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, 'es'))
+    )];
+  }
+
+  function refreshSupplierOptions() {
+    const suppliers = getSuppliers();
+    supplierSuggestions.innerHTML = suppliers.map((name) => `<option value="${escapeHtml(name)}"></option>`).join('');
+    const current = state.supplierFilter;
+    supplierFilter.innerHTML = `<option value="">Todos los proveedores</option>` +
+      suppliers.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
+    supplierFilter.value = suppliers.includes(current) ? current : '';
+    if (!suppliers.includes(current)) state.supplierFilter = '';
+  }
+
   function filteredProducts() {
-    const q = state.filter.trim().toLowerCase();
-    if (!q) return state.products;
-    return state.products.filter((p) =>
-      [p.name, p.category, p.notes].join(' ').toLowerCase().includes(q)
-    );
+    const q = normalize(state.filter);
+    const supplier = normalize(state.supplierFilter);
+    return state.products.filter((p) => {
+      const matchesSearch = !q || [p.name, p.category, p.notes, p.supplierName].join(' ').toLowerCase().includes(q);
+      const matchesSupplier = !supplier || normalize(p.supplierName) === supplier;
+      return matchesSearch && matchesSupplier;
+    });
   }
 
   function updateStats(products) {
@@ -216,20 +246,31 @@
     stats.saleAvg.textContent = money(saleAvg);
   }
 
+  function escapeHtml(text) {
+    return String(text)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
   function render() {
+    refreshSupplierOptions();
     const products = filteredProducts();
     listEl.innerHTML = '';
     updateStats(products);
 
     if (!products.length) {
-      listEl.innerHTML = `<div class="empty">Todavía no hay productos guardados. Aquí irá tu pequeño imperio de costes.</div>`;
+      listEl.innerHTML = `<div class="empty">No hay productos para ese filtro. El proveedor se ha escondido detrás del mostrador.</div>`;
       return;
     }
 
     for (const product of products) {
       const node = tpl.content.firstElementChild.cloneNode(true);
+      const meta = [product.category || 'Sin categoría', product.supplierName || 'Proveedor sin indicar'].join(' · ');
       node.querySelector('.item-name').textContent = product.name || 'Sin nombre';
-      node.querySelector('.item-category').textContent = product.category || 'Sin categoría';
+      node.querySelector('.item-meta').textContent = meta;
       node.querySelector('.item-total').textContent = money(product.calc?.totalCost);
       node.querySelector('.item-base').textContent = money(product.calc?.baseCostUnit);
       node.querySelector('.item-consumables').textContent = money((product.calc?.inkCost || 0) + (product.calc?.paperCost || 0));
@@ -297,6 +338,10 @@
   });
   searchInput.addEventListener('input', (e) => {
     state.filter = e.target.value || '';
+    render();
+  });
+  supplierFilter.addEventListener('change', (e) => {
+    state.supplierFilter = e.target.value || '';
     render();
   });
 
